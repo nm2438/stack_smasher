@@ -373,55 +373,9 @@ class exploit:
 
 
 ########################################################################################################
-# Functions
+# Application-Specific Functions
 ########################################################################################################
 
-
-def get_intended_type(string):
-    """
-    Takes a string, returns the intended value/data type. Used for reading in a settings file
-    """
-    if string=="None":
-        return None
-    elif string=="True":
-        return True
-    elif string=="False":
-        return False
-    else:
-        try:
-            return int(string)
-        except: pass
-    return string
-
-
-def get_filepath(path_of, already_exists=False, default=None):
-    """
-    Get a filepath from the user and check that it's valid
-    """
-    while True:
-        print(f"#|| Enter the file path {path_of}:\n")
-        if default:
-            print("Press ENTER to use default filepath" + \
-                  f"\nDefault filepath: {default}\n")
-        response = input().strip()
-        if response == "" and default:
-            return default
-        elif already_exists:
-            if os.path.exists(response):
-                if "/" not in response and "\\" not in response:
-                    response = "./" + response
-                return response
-            else:
-                print("#|| Not a valid file path")
-        else:
-            dirname = os.path.dirname(response) or os.getcwd()
-            if os.access(dirname, os.W_OK):
-                if "/" not in response and "\\" not in response:
-                    response = "./" + response
-                return response
-            else:
-                print("#|| Not a valid file path")
- 
 
 def check_dmesg(exp, successful_pattern):
     """
@@ -515,37 +469,87 @@ def calculate_offset(pattern, register):
     return pattern.index(chars)
 
 
-def print_exploit_menu():
-    clear_screen()
-    print_block("Welcome to the Exploit Menu", pagewidth, border_line, 8)
-    print("#|| YOUR OPTIONS:","-"*20,"#|| 1 -- VIEW EXPLOIT SETTINGS", \
-        "#|| 2 -- CHANGE EXPLOIT SETTINGS", "#|| 3 -- SAVE EXPLOIT SETTINGS", \
-        "#|| 4 -- RUN EXPLOIT", \
-        "#|| 5 -- EXIT EXPLOIT HANDLER","-"*20, sep="\n",end="\n\n")
-
-
 def exploit_handler(exp):
     """
     Meta-method to guide the entire process of exploit development and running
     """
     exp.get_info() 
+    header = "Welcome to the Exploit Menu"
+    options = [
+                "#|| {} -- VIEW EXPLOIT SETTINGS",
+                "#|| {} -- CHANGE EXPLOIT SETTINGS",
+                "#|| {} -- SAVE EXPLOIT SETTINGS",
+                "#|| {} -- RUN EXPLOIT",
+                "#|| {} -- EXIT EXPLOIT HANDLER"
+              ]
     while True:
-        print_exploit_menu()
-        switch = int(get_input("Make your selection: (1...6)\n",[str(i) for i in range(1,7)]))
-        if switch == 1:
+        clear_screen()
+        choice = get_menu_choice(header, options)
+        if choice == 0:
             clear_screen()
-            print(exp)
+            print("Current Exploit Settings:\n\n", exp)
             input("\nPress ENTER to go back\n")
-        elif switch == 2:
+        elif choice == 1:
             ud()
-        elif switch == 3:                
+        elif choice == 2:                
             exp.save()
-        elif switch == 4:
+        elif choice == 3:
             exp.run()
-        elif switch == 5:
+        elif choice == 4:
             break            
         else:
             input("Invalid option")
+
+
+########################################################################################################
+# General Purpose Functions
+########################################################################################################
+
+
+def get_intended_type(string):
+    """
+    Takes a string, returns the intended value/data type. Used for reading in a settings file
+    """
+    if string=="None":
+        return None
+    elif string=="True":
+        return True
+    elif string=="False":
+        return False
+    else:
+        try:
+            return int(string)
+        except: pass
+    return string
+
+
+def get_filepath(path_of, already_exists=False, default=None):
+    """
+    Get a filepath from the user and check that it's valid
+    """
+    while True:
+        print(f"#|| Enter the file path {path_of}:\n")
+        if default:
+            print("Press ENTER to use default filepath" + \
+                  f"\nDefault filepath: {default}\n")
+        response = input().strip()
+        if response == "" and default:
+            return default
+        elif already_exists:
+            if os.path.exists(response):
+                if "/" not in response and "\\" not in response:
+                    response = "./" + response
+                return response
+            else:
+                print("#|| Not a valid file path")
+        else:
+            dirname = os.path.dirname(response) or os.getcwd()
+            if os.access(dirname, os.W_OK):
+                if "/" not in response and "\\" not in response:
+                    response = "./" + response
+                return response
+            else:
+                print("#|| Not a valid file path")
 
 
 def clear_screen():
@@ -629,6 +633,21 @@ def print_block(text, width, line, pad):
     print(line)
 
 
+def get_menu_choice(header, options, default=None):
+    print_block(header, pagewidth, border_line, 8)
+    print("\n")
+    [print(options[i].format(i)) for i in range(len(options))]
+    print("\n")
+    choices = [str(i) for i in range(len(options))]
+    prompt = f"\nMake your selection: (0..{len(options)-1}):\n"
+    if default:
+        choices.append("")
+        choice = get_input(prompt, choices, default=default)
+    else:
+        choice = get_input(prompt, choices)
+    return int(choice)
+
+
 def get_input(prompt, valid, default=None):
     '''
     Gets and verifies user's menu choice
@@ -667,30 +686,29 @@ if __name__ == "__main__":
     print_block(welcome, pagewidth, border_line, 8)
     exploits = []
     while True:
-        print_block("Main Menu", pagewidth, border_line, 8)
-        print("\n"+"-"*20,"#|| OPTIONS","-"*20,"#|| 1 -- HELP","#|| 2 -- [NEW : Begin New Exploit]", \
-            "#|| 3 -- LOAD : Load Saved Exploit", "#|| 4 -- SWITCH : Switch between currently " + \
-            "loaded exploits", \
-            "#|| 5 -- EXIT", "-"*20, \
-            "(Press Enter for Default Selections)\n",sep="\n")
-        choices = [str(i) for i in range(1,6)]
-        choices.append("")
-        user_input = int(get_input("#|| Please make your selection:\n", \
-            choices,default="2"))
-        if user_input == 1:
+        options = [
+                    "#|| {} -- HELP",
+                    "#|| {} -- [NEW : Begin New Exploit]",
+                    "#|| {} -- LOAD : Load Saved Exploit",
+                    "#|| {} -- SWITCH : Switch between currently loaded exploits",
+                    "#|| {} -- EXIT"
+                  ]
+        choice = get_menu_choice("Main Menu",options,default="1")
+        if choice == 0:
             ud()
             parser.print_help()
-        elif user_input == 2:
+            input("\nPress ENTER to continue")
+        elif choice == 1:
             print("Beginning New Exploit...")
             exploits.append(exploit())
             exploit_handler(exploits[-1])
-        elif user_input == 3:
+        elif choice == 2:
             exploits.append(exploit())
             exploits[-1].load()
             exploit_handler(exploits[-1])
-        elif user_input == 4:
+        elif choice == 3:
             ud()
-        elif user_input == 5:
+        elif choice == 4:
             print("#|| Goodbye!")
             break
         clear_screen()
