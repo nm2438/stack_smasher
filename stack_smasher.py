@@ -85,13 +85,24 @@ class exploit:
 
     def __str__(self):
         """
-        Return string representatation of exploit settings
+        Return string representation of exploit settings
         """
         string = "{\n"
         for key,value in self.__dict__.items():
-            string += f"\t\"{key}\" : \"{value}\"\n"
+            string += f"\t\"{key}\" : \"{value}\",\n"
         string += "}"
         return string
+
+
+    def brief_descrip(self):
+        """
+        Print a brief description of the exploit
+        """
+        self.payload_generator()
+        return "\n" + \
+              f"Is Local: {self.is_local}\n" + \
+              f"Target exe: {self.target_exe}\n" + \
+              f"Payload: {self.payload}\n"
 
 
     def save(self):
@@ -491,6 +502,7 @@ def exploit_handler(exp):
             input("\nPress ENTER to go back\n")
         elif choice == 1:
             ud()
+            input("\nPress ENTER to go back\n")
         elif choice == 2:                
             exp.save()
         elif choice == 3:
@@ -499,6 +511,44 @@ def exploit_handler(exp):
             break            
         else:
             input("Invalid option")
+
+
+def main_menu():
+    while True:
+        options = [
+                    "#|| {} -- HELP",
+                    "#|| {} -- [NEW : Begin New Exploit]",
+                    "#|| {} -- LOAD : Load Saved Exploit from File",
+                    "#|| {} -- SELECT : Select one of the currently loaded exploits and " + \
+                    "enter the exploit menu",
+                    "#|| {} -- EXIT"
+                  ]
+        choice = get_menu_choice("Main Menu",options,default="1")
+        if choice == 0:
+            ud()
+            parser.print_help()
+            input("\nPress ENTER to continue")
+        elif choice == 1:
+            print("Beginning New Exploit...")
+            exploits.append(exploit())
+            exploit_handler(exploits[-1])
+        elif choice == 2:
+            exploits.append(exploit())
+            exploits[-1].load()
+            exploit_handler(exploits[-1])
+        elif choice == 3:
+            clear_screen()
+            options = ["#|| Index: {}\n"+exploits[i].brief_descrip() for i in range(len(exploits))]
+            options.append("\n#|| {} -- Return to Previous Menu")
+            choice = get_menu_choice("Available Exploits",options)
+            if choice == len(exploits):
+                pass
+            else:
+                exploit_handler(exploits[choice])
+        elif choice == 4:
+            print("#|| Goodbye!")
+            break
+        clear_screen()
 
 
 ########################################################################################################
@@ -668,15 +718,18 @@ def get_input(prompt, valid, default=None):
 
 
 if __name__ == "__main__":
-    clear_screen()
-    global pagewidth
-    global border_line
-    global commented_output
-    global yn_key
-    yn_key = {'y':True,'n':False}
+    # Global Variables
     pagewidth = 104
     border_line = "\\" + '#'*pagewidth + "\\"
     commented_output = False
+    yn_key = {'y':True,'n':False}
+    exploits = []
+
+    # Argument Parsing
+
+
+
+    # Welcome Page, only displays on start
     print(titlepage)
     welcome = \
           "Buffer King can be run through the interactive menu, with command line switches, or a" + \
@@ -684,31 +737,5 @@ if __name__ == "__main__":
           " `./bufferking.py -h` from the command line. Otherwise, press enter to begin " + \
           "the interactive menu, or type \"Exit\" to exit"
     print_block(welcome, pagewidth, border_line, 8)
-    exploits = []
-    while True:
-        options = [
-                    "#|| {} -- HELP",
-                    "#|| {} -- [NEW : Begin New Exploit]",
-                    "#|| {} -- LOAD : Load Saved Exploit",
-                    "#|| {} -- SWITCH : Switch between currently loaded exploits",
-                    "#|| {} -- EXIT"
-                  ]
-        choice = get_menu_choice("Main Menu",options,default="1")
-        if choice == 0:
-            ud()
-            parser.print_help()
-            input("\nPress ENTER to continue")
-        elif choice == 1:
-            print("Beginning New Exploit...")
-            exploits.append(exploit())
-            exploit_handler(exploits[-1])
-        elif choice == 2:
-            exploits.append(exploit())
-            exploits[-1].load()
-            exploit_handler(exploits[-1])
-        elif choice == 3:
-            ud()
-        elif choice == 4:
-            print("#|| Goodbye!")
-            break
-        clear_screen()
+
+    main_menu()
