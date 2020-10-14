@@ -50,15 +50,6 @@ import select
 from itertools import product
 
 ########################################################################################################
-# Argparser
-########################################################################################################
-
-#global parser
-#parser = argparse.ArgumentParser(description=f"Tool for overflowing buffers \n{ud()}")
-# parser.add_argument
-
-
-########################################################################################################
 # Classes
 ########################################################################################################
 
@@ -122,12 +113,15 @@ class exploit:
         input("\n\nPress ENTER to continue")
 
 
-    def load(self):
+    def load(self, filename=None):
         """
         Loads exploit settings from a file
         """
-        default = f"{os.getcwd()}/stacksmash"
-        path = get_filepath("of your saved exploit", default=default)
+        if filename == None:
+            default = f"{os.getcwd()}/stacksmash"
+            path = get_filepath("of your saved exploit", default=default)
+        else:
+            path = get_filepath("", already_exists=True, path=filename) 
         with open(path, "r") as file:
             lines = file.readlines()
         for line in lines:
@@ -664,17 +658,19 @@ def exploit_handler(exp):
             input("Invalid option")
 
 
-def main_menu():
+def main_menu(choice=None, filename=None):
     while True:
-        options = [
-                    "#|| {} -- HELP",
-                    "#|| {} -- [NEW : Begin New Exploit]",
-                    "#|| {} -- LOAD : Load Saved Exploit from File",
-                    "#|| {} -- SELECT : Select one of the currently loaded exploits and " + \
-                    "enter the exploit menu",
-                    "#|| {} -- EXIT"
-                  ]
-        choice = get_menu_choice("Main Menu",options,default="1")
+        if choice == None:
+            options = [
+                        "#|| {} -- HELP",
+                        "#|| {} -- [NEW : Begin New Exploit]",
+                        "#|| {} -- LOAD : Load Saved Exploit from File",
+                        "#|| {} -- SELECT : Select one of the currently loaded exploits and " + \
+                        "enter the exploit menu",
+                        "#|| {} -- EXIT"
+                      ]
+            choice = get_menu_choice("Main Menu",options,default="1")
+
         if choice == 0:
             #parser.print_help()
             ud()
@@ -684,7 +680,7 @@ def main_menu():
             exploit_handler(exploits[-1])
         elif choice == 2:
             exploits.append(exploit())
-            exploits[-1].load()
+            exploits[-1].load(filename)
             exploit_handler(exploits[-1])
         elif choice == 3:
             clear_screen()
@@ -737,16 +733,20 @@ def get_intended_type(string):
     return string
 
 
-def get_filepath(path_of, already_exists=False, default=None):
+def get_filepath(path_of, already_exists=False, default=None, path=None):
     """
     Get a filepath from the user and check that it's valid
     """
     while True:
-        print(f"#|| Enter the file path {path_of}:\n")
-        if default:
-            print("Press ENTER to use default filepath" + \
-                  f"\nDefault filepath: {default}\n")
-        response = input().strip()
+        if path == None:
+            print(f"#|| Enter the file path {path_of}:\n")
+            if default:
+                print("Press ENTER to use default filepath" + \
+                    f"\nDefault filepath: {default}\n")
+            response = input().strip()
+        else:
+            response = path
+
         if response == "" and default:
             return default
         elif already_exists:
@@ -756,6 +756,8 @@ def get_filepath(path_of, already_exists=False, default=None):
                 return response
             else:
                 print("#|| Not a valid file path")
+                if path != None:
+                    quit()
         else:
             dirname = os.path.dirname(response) or os.getcwd()
             if os.access(dirname, os.W_OK):
@@ -890,21 +892,30 @@ if __name__ == "__main__":
     exploits = []
 
     # Argument Parsing
+    parser = argparse.ArgumentParser(description="A tool for conducting local and " + \
+        "remote/socket-based buffer overflows.")
+    parser.add_argument("-i", "--interactive", \
+        help="open script in interactive mode", action="store_true")
+    parser.add_argument("-l", "--load", \
+        help="load: specify a file from which to load an exploit")
+    args = parser.parse_args()
 
-
-
-    # Welcome Page, only displays on start
-    clear_screen()
-    print(titlepage)
-    welcome = \
-          "Buffer King can be run through the interactive menu, with command line switches, or a" + \
-          " combination of the two. To see the command line switches, type \"Help\" or run" + \
-          " `./bufferking.py -h` from the command line. Otherwise, press enter to begin " + \
-          "the interactive menu, or type \"Exit\" to exit" + \
-          "\n\nStatement above reflects a future state of the program. For now, just press ENTER." + \
-          "\nThe claimed functionality will be added soon."
-    print_block(welcome, pagewidth, border_line, 8)
-    input("\nPress ENTER to continue\n")
-    clear_screen()
-
-    main_menu()
+    if args.interactive:
+        # Welcome Page, only displays on start
+        clear_screen()
+        print(titlepage)
+        welcome = \
+            "Buffer King can be run through the interactive menu, with command line switches, or a" + \
+            " combination of the two. To see the command line switches, type \"Help\" or run" + \
+            " `./bufferking.py -h` from the command line. Otherwise, press enter to begin " + \
+            "the interactive menu, or type \"Exit\" to exit" + \
+            "\n\nStatement above reflects a future state of the program. For now, just press ENTER." + \
+            "\nThe claimed functionality will be added soon."
+        print_block(welcome, pagewidth, border_line, 8)
+        input("\nPress ENTER to continue\n")
+        clear_screen()
+        main_menu()
+    elif args.load:
+        main_menu(choice=2, filename=args.load)
+    else:
+        parser.print_help()
