@@ -611,6 +611,27 @@ def calculate_offset(pattern, register):
     return pattern.index(chars)
 
 
+def change_setting(exp):
+    clear_screen()
+    print("Current Exploit Settings:\n\n", exp, "\nNote: It's quite easy to " + \
+        "render your exploit unusable by incorrectly editing the settings!\n",sep="")
+    num_opt = len(exp.__dict__)
+    keylist = list(exp.__dict__.keys())
+    options = ["#|| {} -- "+f"{keylist[i]}" for i in range(num_opt)]
+    options.append("#|| {} -- Return to the Previous Menu")
+    choice = get_menu_choice("\n#|| Which setting would you like to change? " + \
+        "(Press corresponding number for your menu choice):\n", options)
+    if choice == num_opt:
+        return
+    else:
+        while True:
+            user_inpt = input("\nNote: NO INPUT VALIDATION IN THIS MENU\n" + \
+                "Enter the new value for this setting:\n").strip()
+            if check_input():
+                break
+        exp.__setattr__(keylist[choice], get_intended_type(user_inpt))
+
+
 def exploit_handler(exp):
     """
     Meta-method to guide the entire process of exploit development and running
@@ -632,7 +653,7 @@ def exploit_handler(exp):
             print("Current Exploit Settings:\n\n", exp)
             input("\nPress ENTER to go back\n")
         elif choice == 1:
-            ud()
+            change_setting(exp)            
         elif choice == 2:                
             exp.save()
         elif choice == 3:
