@@ -112,7 +112,8 @@ Argparsing/command line switches coming soon
     
 ## Future Releases
 <ul>
-  <li>Command line switches, Usage statement, and Help statement (all via Argparse library)</li>
+  <li><del>Easily change exploit settings</del></li>
+  <li><del>Command line switches, Usage statement, and Help statement (all via Argparse library)</del></li>
   <li>Automatic local Windows exploits (to mirror the local linux capabilities)</li>
   <li>Analysis module to automatically perform basic remote exploits, as long as a copy of the target application is available locally</li>
   <li>Additional payload generation methods to overcome basic stack protection/stack canaries</li>
