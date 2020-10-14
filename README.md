@@ -56,7 +56,7 @@ Argparsing/command line switches coming soon
 #### Exploit Functionality:
 ##### Currently Supported Exploit Types and Functionalities for Each
 <ul>
-  <li>Local Linux (Target binary/executable is on the local system, and the local OS is some variety of Linux)</li>
+  <li><strong>Local Linux</strong> (Target binary/executable is on the local system, and the local OS is some variety of Linux)</li>
   <ul>
     <li>Determine buffer size/EIP offset automatically</li>
     <ul>
@@ -84,7 +84,7 @@ Argparsing/command line switches coming soon
       </ul>
     </ul>
   </ul>
-  <li>Remote (Any target OS)</li>
+  <li><strong>Remote</strong> (Any target OS)</li>
   <ul>
     <li>Manually enter buffer size and as many target EIPs as you'd like</li>
     <li>Manually enter any commands needed to trigger the overflow vulnerability</li>
