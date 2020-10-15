@@ -11,7 +11,7 @@ import platform
 import os
 
 titlepage = \
-"""
+    """
 ########################################################################################################
 #======================================================================================================#
 #||                     _             _                              _                               ||#
@@ -39,6 +39,7 @@ titlepage = \
 #======================================================================================================#
 ########################################################################################################
 """
+
 
 def ud():   # Temp
     print("Feature under development")
@@ -914,12 +915,9 @@ if __name__ == "__main__":
         clear_screen()
         print(titlepage)
         welcome = \
-            "Buffer King can be run through the interactive menu, with command line switches, or a" + \
-            " combination of the two. To see the command line switches, type \"Help\" or run" + \
-            " `./bufferking.py -h` from the command line. Otherwise, press enter to begin " + \
-            "the interactive menu, or type \"Exit\" to exit" + \
-            "\n\nStatement above reflects a future state of the program. For now, just press ENTER." + \
-            "\nThe claimed functionality will be added soon."
+            "stacksmasher can be run through the interactive menu or with command line switches. " + \
+            "To see the command line switches, select \"Help\" or run" + \
+            " `./stack_smasher.py -h` from the command line.\n"
         print_block(welcome, pagewidth, border_line, 8)
         input("\nPress ENTER to continue\n")
         clear_screen()
