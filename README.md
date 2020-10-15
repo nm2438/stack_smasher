@@ -7,17 +7,17 @@ README last updated on: 14OCT2020
 Feel free to report bugs via Issues or request to collaborate
 
 ### Usage
-For now, it is a purely interactive script. Run 
 
-> ./stack_smasher.py
+```
+usage: stack_smasher.py [-h] [-i] [-l LOAD]
 
-or
+A tool for conducting local and remote/socket-based buffer overflows.     
 
-> python3 ./stack_smasher.py
-
-and follow the menus
-
-Argparsing/command line switches coming soon
+optional arguments:
+  -h, --help            show this help message and exit
+  -i, --interactive     open script in interactive mode
+  -l LOAD, --load LOAD  load: specify a file from which to load an exploit
+```
 
 ## So, what's it good for?
 
@@ -112,8 +112,8 @@ Argparsing/command line switches coming soon
     
 ## Future Releases
 <ul>
-  <li><del>Easily change exploit settings</del></li>
-  <li><del>Command line switches, Usage statement, and Help statement (all via Argparse library)</del></li>
+  <li><del>Easily change exploit settings</del> Done</li>
+  <li><del>Command line switches, Usage statement, and Help statement (all via Argparse library)</del> Done</li>
   <li>Automatic local Windows exploits (to mirror the local linux capabilities)</li>
   <li>Analysis module to automatically perform basic remote exploits, as long as a copy of the target application is available locally</li>
   <li>Additional payload generation methods to overcome basic stack protection/stack canaries</li>
