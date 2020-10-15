@@ -114,16 +114,16 @@ optional arguments:
 <ul>
   <li><del>Easily change exploit settings</del> Done</li>
   <li><del>Command line switches, Usage statement, and Help statement (all via Argparse library)</del> Done</li>
-  <li>Bug Fixes</li>
-  <ul>
-  <li><del>"Zero" option for confidence intervals</del></li>
-  <li>Correctly read in EIP lists with only a single item</li>
+  <li><del>Bug Fixes</del> Done</li>
+    <ul>
+      <li><del>"Zero" option for confidence intervals</del> Done</li>
+      <li><del>Correctly read in EIP lists with only a single item</del> Done</li>
+      <li><del>Reset menu choice after returning from subfunctions</del> Done</li>
+      <li><del>Hang for ENTER after printing "Missing" in self.run()</del> Done</li>
+      <li><del>Change "if not []"'s to "if []==None"</del> Done</li>
+      <li><del>Change get_buffer_size overflow verification to be more reliable</del> Done</li>
+    </ul>
   <li>Local linux exploits that take in payload as argument rather than stdin</li>
-  <li><del>Reset menu choice after returning from subfunctions</del></li>
-  <li><del>Hang for ENTER after printing "Missing" in self.run()</del></li>
-  <li>Change "if not []"'s to "if []==None"</li>
-  <li>Change get_buffer_size overflow verification to be more reliable</li>
-  </ul>
   <li>Automatic local Windows exploits (to mirror the local linux capabilities)</li>
   <li>Analysis module to automatically perform basic remote exploits, as long as a copy of the target application is available locally</li>
   <li>Additional payload generation methods to overcome basic stack protection/stack canaries</li>

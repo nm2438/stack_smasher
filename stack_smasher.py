@@ -223,11 +223,11 @@ class exploit:
     def get_nop_counts(self):
         count_options = [str(2*n) for n in range(1000)]
         count_options.append("")
-        if not self.prepend_nop_count:
+        if self.prepend_nop_count == None:
             response = get_input("#|| How many NOPS would you like to prepend? " +
                                  "(Enter a multiple of 2) [16]\n", count_options, default="16")
             self.prepend_nop_count = int(response)
-        if not self.append_nop_count:
+        if self.append_nop_count == None:
             response = get_input("#|| How many NOPS would you like to append? " +
                                  "(Enter a multiple of 2) [16]\n", count_options, default="16")
             self.append_nop_count = int(response)
@@ -350,17 +350,17 @@ class exploit:
 
         # Split paths for local/remote
         if self.is_local:
-            if not self.target_exe:
+            if self.target_exe == None:
                 self.target_exe = get_filepath(
                     "of your target", already_exists=True)
-            if not self.trigger_command:
+            if self.trigger_command == None:
                 self.get_trigger()
-            if not self.buffer_size:
+            if self.buffer_size == None:
                 self.get_buffer_size()
             self.get_target_eip()
-            if not self.prepend_nop_count or not self.append_nop_count:
+            if self.prepend_nop_count == None or self.append_nop_count == None:
                 self.get_nop_counts()
-            if not self.shellcode:
+            if self.shellcode == None:
                 self.set_shellcode()
         else:
             # get info for remote buffer overflow exploits
@@ -383,18 +383,18 @@ class exploit:
                         self.target_ip = response
                     else:
                         print("\n#|| Sorry, I didn't understand that\n")
-                if not self.target_port:
+                if self.target_port == None:
                     response = get_input("\n#|| Enter the target port:\n", [
                                          str(i) for i in range(65536)])
                     self.target_port = int(response)
-                if not self.trigger_command:
+                if self.trigger_command == None:
                     self.get_trigger()
-                if not self.buffer_size:
+                if self.buffer_size == None:
                     self.get_buffer_size()
                 self.get_target_eip()
-                if not self.prepend_nop_count or not self.append_nop_count:
+                if self.prepend_nop_count == None or self.append_nop_count == None:
                     self.get_nop_counts()
-                if not self.shellcode:
+                if self.shellcode == None:
                     self.set_shellcode()
 
     def payload_generator(self, buffer_size, target_eip):
@@ -431,9 +431,9 @@ class exploit:
             # All local exploits
             if self.local_os == "linux":
                 # Local Linux
-                if self.buffer_size and (len(self.target_eip) > 0) and \
-                        self.prepend_nop_count and self.shellcode \
-                        and self.append_nop_count:
+                if self.buffer_size != None and (len(self.target_eip) > 0) and \
+                        self.prepend_nop_count != None and self.shellcode != None\
+                        and self.append_nop_count != None:
                     cmd_string = self.target_exe
                     sudo = yn_key[get_input("\nShould I run command as sudo? ([y]/n)\n",
                                             ["y", "n", ""], default="y")]
@@ -449,9 +449,10 @@ class exploit:
             # Back to all local exploits
         elif self.is_local == False:
             # All remote exploits
-            if self.target_ip and self.target_port and \
-                    self.buffer_size and (len(self.target_eip) > 0) \
-                    and self.prepend_nop_count and self.shellcode and self.append_nop_count:
+            if self.target_ip != None and self.target_port != None and \
+                    self.buffer_size != None and (len(self.target_eip) > 0) \
+                    and self.prepend_nop_count != None and self.shellcode != None \
+                    and self.append_nop_count != None:
                 pass
             else:
                 print(missing)
@@ -570,7 +571,7 @@ def interpret_dmesg(exp, dmesg, successful_pattern):
                     sp = err[i+1]
                 else:
                     sp = err[i+1][-8:]
-    if not ip or not sp:
+    if ip == None or sp == None:
         print("\n#|| Unable to read dmesg output. Please read output manually " +
               "and enter the following values:\n#|| \tNote: Error catching here is " +
               "limited, please enter input carefully\n(64 bit programs should have 16 " +
@@ -743,11 +744,10 @@ def get_intended_type(string):
     Takes a string, returns the intended value/data type. Used for reading in a settings file
     """
     if re.search(r"\[.*\]", string):
-        split = re.split(r"\"|\'", string)
-        result = []
-        for i in range(1, len(split)-1):
-            if re.search(r"^,\s*", split[i+1]):
-                result.append(split[i])
+        newstr = re.sub(r"[\[|\]|,|\s]", "", string)
+        result = re.split(r"[\"|\']", newstr)
+        # Remove null entries
+        result = list(filter(lambda a: a != "", result))
         return result
     elif string == "None":
         return None
