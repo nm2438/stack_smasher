@@ -122,7 +122,7 @@ optional arguments:
       <li><del>Hang for ENTER after printing "Missing" in self.run()</del> Done</li>
       <li><del>Change "if not []"'s to "if []==None"</del> Done</li>
       <li><del>Change get_buffer_size overflow verification to be more reliable</del> Done</li>
-      <li>Fix msfvenom integration</li>
+      <li><del>Fix msfvenom integration</del></li>
       <li><del>Always generate payload before saving file</del></li>
     </ul>
   <li>Additional linux built-in shellcodes</li>

