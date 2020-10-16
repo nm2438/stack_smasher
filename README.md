@@ -2,7 +2,7 @@
 A tool for conducting local and remote/socket-based buffer overflows.
 Tools for bypassing certain types of stack protection to be featured in a future release
 
-README last updated on: 14OCT2020
+README last updated on: 16OCT2020
 
 Feel free to report bugs via Issues or request to collaborate
 
@@ -42,9 +42,6 @@ optional arguments:
 <ul>
   <li>View the current exploit's settings</li>
   <li>Change the current exploit's settings</li>
-  <ul>
-    <li>At time of writing, changing settings is not supported, but feature should be added by end of day</li>
-  </ul>
   <li>Save the current exploit settings to a file (to be loaded back into the script at a later day or time)</li>
   <li>Run the exploit</li>
   <ul>
@@ -58,20 +55,21 @@ optional arguments:
 <ul>
   <li><strong>Local Linux</strong> (Target binary/executable is on the local system, and the local OS is some variety of Linux)</li>
   <ul>
+    <li><strong>NEW:</strong> Supports sending payload via stdin OR via cmdline argument</li>
     <li>Determine buffer size/EIP offset automatically</li>
     <ul>
       <li>Requires access to dmesg</li>
       <li>Values can also be entered manually</li>
     </ul>
     <li>Add any additional target EIPs</li>
-    <li>Manually enter any commands needed to trigger the overflow vulnerability</li>
+    <li>Manually enter any commands and/or cmdline arguments needed to trigger the overflow vulnerability</li>
     <li>Specify number of NOPs to prepend/append to the shellcode</li>
     <li>Set shellcode</li>
     <ul>
       <li>Can generate an msfvenom payload without leaving the script -- if you have access to msfvenom on the local host</li>
       <li>Otherwise, you can:</li>
       <ul>
-        <li>Use one of the preset payloads built into the script (one for linux, one for windows)</li>
+        <li>Use one of the preset payloads built into the script</li>
         <li>Enter your shellcode manually as a string</li>
       </ul>
     </ul>
@@ -81,6 +79,7 @@ optional arguments:
       <li>You can specify an EIP confidence interval to try multiple EIPs (centered around each of the target EIPs already specified)</li>
       <ul>
         <li>Interval goes forward/back in byte increments</li>
+        <li><strong>NOTE:</strong> Extremely large EIP intervals are recommended for executables that accept payload via cmdline args (based on preliminary testing)</li>
       </ul>
     </ul>
   </ul>
@@ -128,8 +127,8 @@ optional arguments:
   <li><del>Additional linux built-in shellcodes</del> Done</li>
   <li><del>Local linux exploits that accept payload as argument rather than stdin</del></li>
     <ul>
-      <li>Successfully tested?</li>
-      <li>Update README</li>
+      <li><del>Successfully tested?</del> Yes!</li>
+      <li><del>Update README</del></li>
     </ul>
   <li>Add ability to print payload to stdout or to file in a variety of different formats</li>
   <li>Automatic local Windows exploits (to mirror the local linux capabilities)</li>

