@@ -582,7 +582,7 @@ class exploit:
                          ["y", "n", ""], default="n")
         if yn_key[show]:
             for line in responses:
-                print("\t"+line)
+                print("\t",line,sep="")
         input("\nFinished. Press ENTER to return.")
 
 
