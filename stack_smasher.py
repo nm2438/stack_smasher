@@ -106,7 +106,7 @@ class exploit:
         default = f"{os.getcwd()}/stacksmash"
         path = get_filepath(
             "where you'd like to save your settings", default=default)
-        self.payload_generator(buffer_size=self.buffer_size,target_eip=self.target_eip)
+        self.payload_generator(buffer_size=self.buffer_size,target_eip=self.target_eip[0])
         with open(path, "w") as file:
             file.write(str(self))
         clear_screen()
