@@ -122,10 +122,10 @@ optional arguments:
       <li><del>Hang for ENTER after printing "Missing" in self.run()</del> Done</li>
       <li><del>Change "if not []"'s to "if []==None"</del> Done</li>
       <li><del>Change get_buffer_size overflow verification to be more reliable</del> Done</li>
-      <li><del>Fix msfvenom integration</del></li>
-      <li><del>Always generate payload before saving file</del></li>
+      <li><del>Fix msfvenom integration</del> Done</li>
+      <li><del>Always generate payload before saving file</del> Done</li>
     </ul>
-  <li>Additional linux built-in shellcodes</li>
+  <li><del>Additional linux built-in shellcodes</del> Done</li>
   <li><del>Local linux exploits that accept payload as argument rather than stdin</del></li>
     <ul>
       <li>Successfully tested?</li>

