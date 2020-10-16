@@ -174,9 +174,16 @@ class exploit:
                             print(f"\t[*] Trying with pattern of size {size}")
                         pattern = gen_pattern(size)
                         init_dmesg = check_dmesg()
-                        p1 = subprocess.Popen([self.target_exe], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                              stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
-                        p1.communicate(input=pattern)
+                        if self.stdin_or_arg == "stdin":
+                            p1 = subprocess.Popen([self.target_exe], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
+                            p1.communicate(input=pattern)
+                        elif self.stdin_or_arg == "arg":
+                            p1 = subprocess.Popen(["/bin/bash"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
+                            p1.communicate(input=(" ".join([self.target_exe, pattern])))
+                        else:
+                            print("\nMissing information\n")
                         new_dmesg = check_dmesg()
                         if new_dmesg[-1] != init_dmesg[-1]:
                             print(
