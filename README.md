@@ -9,7 +9,7 @@ Feel free to report bugs via Issues or request to collaborate
 ### Usage
 
 ```
-usage: stack_smasher.py [-h] [-i] [-l LOAD]
+usage: stack_smasher.py [-h] [-i] [-l LOAD] [-m]
 
 A tool for conducting local and remote/socket-based buffer overflows.     
 
@@ -17,6 +17,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -i, --interactive     open script in interactive mode
   -l LOAD, --load LOAD  load: specify a file from which to load an exploit
+  -m, --manual          jump to manual message writer mode
 ```
 
 ## So, what's it good for?
@@ -130,7 +131,7 @@ optional arguments:
       <li><del>Successfully tested?</del> Yes!</li>
       <li><del>Update README</del></li>
     </ul>
-  <li>Manual hex message writer</li>
+  <li><del>Manual hex message writer</del></li>
   <li>Add ability to print payload to stdout or to file in a variety of different formats</li>
   <li>Automatic local Windows exploits (to mirror the local linux capabilities)</li>
   <li>Return to "set shellcode" menu from "change settings" menu</li>
