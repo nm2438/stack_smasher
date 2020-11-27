@@ -130,6 +130,7 @@ optional arguments:
       <li><del>Successfully tested?</del> Yes!</li>
       <li><del>Update README</del></li>
     </ul>
+  <li>Manual hex message writer</li>
   <li>Add ability to print payload to stdout or to file in a variety of different formats</li>
   <li>Automatic local Windows exploits (to mirror the local linux capabilities)</li>
   <li>Return to "set shellcode" menu from "change settings" menu</li>
